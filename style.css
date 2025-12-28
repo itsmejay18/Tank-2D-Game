@@ -192,6 +192,15 @@ select:focus {
   transition: width 0.15s ease;
 }
 
+.power-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  font-size: 14px;
+  color: #9fb3d1;
+}
+
 #gameCanvas {
   margin: 16px auto 8px;
   display: block;
@@ -210,51 +219,54 @@ select:focus {
   margin-top: 12px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
 }
 
 .mobile-controls.hidden {
   display: none;
 }
 
-.dpad {
+.pad-grid {
   display: grid;
-  grid-template-columns: repeat(3, 60px);
-  grid-template-rows: repeat(2, 60px);
+  grid-template-columns: repeat(3, 64px);
+  grid-template-rows: repeat(3, 64px);
   gap: 8px;
   justify-items: center;
   align-items: center;
 }
 
-.dpad .up {
-  grid-column: 2 / 3;
+.pad-placeholder {
+  width: 64px;
+  height: 64px;
+  pointer-events: none;
 }
 
-.dpad .middle-row {
-  grid-column: 1 / 4;
-  display: grid;
-  grid-template-columns: repeat(3, 60px);
-  gap: 8px;
-}
-
-.dpad-btn,
+.pad-btn,
 .shoot-btn {
   background: linear-gradient(120deg, #1f2937, #0f172a);
   color: #e8ecf5;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
-  width: 60px;
-  height: 60px;
+  width: 64px;
+  height: 64px;
   font-size: 20px;
   font-weight: 700;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
   touch-action: none;
 }
 
-.dpad-btn:active,
+.pad-btn:active,
 .shoot-btn:active {
   transform: translateY(1px);
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
 }
 
 .shoot-btn {
@@ -264,6 +276,63 @@ select:focus {
   border: none;
   font-size: 17px;
   letter-spacing: 1px;
+}
+
+.dash-btn {
+  width: 90px;
+  height: 90px;
+  background: radial-gradient(circle at 30% 30%, #38bdf8, #6366f1);
+  border: none;
+  color: #e8ecf5;
+  font-weight: 700;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.dash-btn:active {
+  transform: translateY(1px);
+}
+
+/* Modal overlay for game over */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 20px;
+  width: min(420px, 90%);
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.modal-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.secondary {
+  background: #1f2937;
+  color: #e8ecf5;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 @media (max-width: 720px) {
@@ -281,3 +350,4 @@ select:focus {
     justify-content: center;
   }
 }
+
