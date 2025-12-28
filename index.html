@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2D Survival Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page">
+    <section id="landing" class="panel">
+      <h1 class="title">2D Survival Game</h1>
+      <p class="tagline">Dodge the red square for as long as you can.</p>
+      <p id="statusMessage" class="status hidden"></p>
+      <div class="form-group">
+        <label for="playerName">Player Name</label>
+        <input id="playerName" type="text" placeholder="Enter your name">
+      </div>
+      <div class="form-group">
+        <label for="difficulty">Difficulty (enemy speed)</label>
+        <select id="difficulty">
+          <option value="easy">Easy - Slow</option>
+          <option value="medium" selected>Medium - Normal</option>
+          <option value="hard">Hard - Fast</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="map">Map Theme</label>
+        <select id="map">
+          <option value="city">City (dark)</option>
+          <option value="forest">Forest (green)</option>
+          <option value="desert">Desert (sandy)</option>
+        </select>
+      </div>
+      <button id="startBtn" class="primary">Start Game</button>
+    </section>
+
+    <section id="gameWrapper" class="panel hidden">
+      <div class="hud">
+        <span class="label">Player:</span>
+        <span id="playerDisplay" class="value"></span>
+        <span class="label">Map:</span>
+        <span id="mapDisplay" class="value"></span>
+        <span class="label">Score:</span>
+        <span id="scoreDisplay" class="value">0</span>
+      </div>
+      <canvas id="gameCanvas" width="600" height="400"></canvas>
+      <p class="hint">Move with W A S D, aim with the mouse, click to shoot. Avoid the red enemy!</p>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

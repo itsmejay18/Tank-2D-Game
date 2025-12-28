@@ -1,0 +1,146 @@
+/* Basic reset to keep layout predictable for beginners */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  background: radial-gradient(circle at 20% 20%, #1b233b, #0a0f1c 55%, #05070e 100%);
+  color: #e8ecf5;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.page {
+  width: 100%;
+  max-width: 720px;
+}
+
+.panel {
+  background: rgba(20, 27, 48, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+}
+
+.hidden {
+  display: none;
+}
+
+.title {
+  font-size: 32px;
+  letter-spacing: 1px;
+}
+
+.tagline {
+  color: #9fb3d1;
+  margin-bottom: 4px;
+}
+
+.status {
+  background: rgba(231, 76, 60, 0.12);
+  border: 1px solid rgba(231, 76, 60, 0.4);
+  color: #ffc7bd;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+label {
+  font-weight: 600;
+  color: #c7d7f4;
+}
+
+input,
+select {
+  background: #12192c;
+  color: #e8ecf5;
+  border: 1px solid #2d3a5c;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 15px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #5ccfe6;
+  box-shadow: 0 0 0 3px rgba(92, 207, 230, 0.25);
+}
+
+.primary {
+  background: linear-gradient(120deg, #53d397, #4ad1ff);
+  color: #061020;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(77, 214, 242, 0.35);
+}
+
+.hud {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  align-items: center;
+  font-size: 15px;
+}
+
+.label {
+  color: #9fb3d1;
+}
+
+.value {
+  font-weight: 700;
+  color: #f6f8ff;
+}
+
+#gameCanvas {
+  margin: 16px auto 8px;
+  display: block;
+  background: #12192c;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 20px rgba(83, 211, 151, 0.45), 0 0 40px rgba(74, 209, 255, 0.25);
+  cursor: crosshair;
+}
+
+.hint {
+  color: #9fb3d1;
+}
+
+@media (max-width: 720px) {
+  .panel {
+    padding: 22px;
+  }
+
+  #gameCanvas {
+    width: 100%;
+    height: auto;
+  }
+}
