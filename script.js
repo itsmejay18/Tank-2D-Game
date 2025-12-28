@@ -21,6 +21,12 @@ const mapColors = {
   desert: "#c6ad6b", // sandy yellow
 };
 
+const mapObstacleStyles = {
+  city: { color: "#475569", stroke: "#7c90a8", count: 5, sizeRange: [60, 120] },
+  forest: { color: "#1f3b29", stroke: "#3f6f52", count: 4, sizeRange: [70, 130] },
+  desert: { color: "#b38745", stroke: "#d8b278", count: 4, sizeRange: [70, 140] },
+};
+
 const difficultySettings = {
   easy: { enemySpeed: 1.6, enemyBulletSpeed: 2.6, enemyFireDelay: 80 },
   medium: { enemySpeed: 2.4, enemyBulletSpeed: 3.4, enemyFireDelay: 60 },
@@ -58,6 +64,7 @@ const enemy = {
 
 let bullets = [];
 let healthPickups = [];
+let obstacles = [];
 let playerName = "Player";
 let animationId = null;
 let keys = {};
@@ -65,6 +72,7 @@ let mousePos = { x: canvas.width / 2, y: canvas.height / 2 };
 let score = 0;
 let settings = difficultySettings.medium;
 let pickupTimer = 0;
+let currentMap = "city";
 
 startBtn.addEventListener("click", startGame);
 document.addEventListener("keydown", handleKeyDown);
@@ -83,6 +91,7 @@ function startGame() {
   playerName = playerNameInput.value.trim() || "Player";
   const difficulty = difficultySelect.value;
   const mapChoice = mapSelect.value;
+  currentMap = mapChoice;
 
   settings = difficultySettings[difficulty] || difficultySettings.medium;
   playerDisplay.textContent = playerName;
@@ -94,6 +103,7 @@ function startGame() {
   updateHUD();
 
   setCanvasTheme(mapChoice);
+  generateObstacles(mapChoice);
   resetPositions();
 
   landingScreen.classList.add("hidden");
@@ -200,9 +210,7 @@ function movePlayer() {
     dy = (dy / length) * player.speed;
   }
 
-  player.x += dx;
-  player.y += dy;
-  clampToCanvas(player);
+  moveTankWithObstacles(player, dx, dy, false);
 
   const playerCenter = getCenter(player);
   player.angle = Math.atan2(mousePos.y - playerCenter.y, mousePos.x - playerCenter.x);
@@ -210,17 +218,7 @@ function movePlayer() {
 
 // Move the enemy and bounce off walls
 function moveEnemy() {
-  enemy.x += enemy.dx;
-  enemy.y += enemy.dy;
-
-  if (enemy.x < 0 || enemy.x + enemy.size > canvas.width) {
-    enemy.dx *= -1;
-    enemy.x = Math.max(0, Math.min(enemy.x, canvas.width - enemy.size));
-  }
-  if (enemy.y < 0 || enemy.y + enemy.size > canvas.height) {
-    enemy.dy *= -1;
-    enemy.y = Math.max(0, Math.min(enemy.y, canvas.height - enemy.size));
-  }
+  moveTankWithObstacles(enemy, enemy.dx, enemy.dy, true);
 
   const playerCenter = getCenter(player);
   const enemyCenter = getCenter(enemy);
@@ -240,6 +238,11 @@ function updateBullets() {
       bullet.y < -bullet.size ||
       bullet.y > canvas.height + bullet.size
     ) {
+      return false;
+    }
+
+    // Bullets blocked by obstacles
+    if (isPointInObstacles(bullet.x, bullet.y)) {
       return false;
     }
 
@@ -290,7 +293,7 @@ function spawnHealthPickup() {
   while (attempts < 40) {
     const x = Math.random() * (canvas.width - size);
     const y = Math.random() * (canvas.height - size);
-    if (isFarFromPlayerAndEnemy(x, y, safeDistance)) {
+    if (isFarFromPlayerAndEnemy(x, y, safeDistance) && !isPointInObstacles(x, y)) {
       healthPickups.push({ x, y, size, heal });
       break;
     }
@@ -322,7 +325,7 @@ function placeEnemySafely() {
     const dx = enemy.x - player.x;
     const dy = enemy.y - player.y;
     const dist = Math.hypot(dx, dy);
-    placed = dist > safeDistance;
+    placed = dist > safeDistance && !rectOverlapsObstacles(enemy);
     attempts += 1;
   }
 }
@@ -337,6 +340,7 @@ function setEnemyVelocity() {
 // Drawing helpers
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawObstacles();
   drawBullets();
   drawPickups();
   drawTank(player, "#3adb76", "#a8ffd7", player.angle);
@@ -378,6 +382,26 @@ function drawPickups() {
   });
 }
 
+function drawObstacles() {
+  const style = mapObstacleStyles[currentMap] || mapObstacleStyles.city;
+  obstacles.forEach((obs) => {
+    ctx.save();
+    ctx.fillStyle = style.color;
+    ctx.strokeStyle = style.stroke;
+    ctx.lineWidth = 3;
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(obs.x, obs.y, obs.width, obs.height, 10);
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+      ctx.strokeRect(obs.x, obs.y, obs.width, obs.height);
+    }
+    ctx.restore();
+  });
+}
+
 // Draws a simple square tank with a barrel
 function drawTank(tank, bodyColor, barrelColor, angle) {
   ctx.save();
@@ -412,6 +436,94 @@ function isFarFromPlayerAndEnemy(x, y, minDistance) {
     Math.hypot(x - playerCenter.x, y - playerCenter.y) > minDistance &&
     Math.hypot(x - enemyCenter.x, y - enemyCenter.y) > minDistance
   );
+}
+
+function isPointInObstacles(px, py) {
+  return obstacles.some(
+    (obs) => px >= obs.x && px <= obs.x + obs.width && py >= obs.y && py <= obs.y + obs.height
+  );
+}
+
+function rectOverlapsObstacles(rect) {
+  return obstacles.some((obs) =>
+    rectanglesOverlap(
+      { x: rect.x, y: rect.y, width: rect.size, height: rect.size },
+      obs
+    )
+  );
+}
+
+function rectanglesOverlap(r1, r2) {
+  return (
+    r1.x < r2.x + r2.width &&
+    r1.x + r1.width > r2.x &&
+    r1.y < r2.y + r2.height &&
+    r1.y + r1.height > r2.y
+  );
+}
+
+// Move tanks while respecting rock obstacles
+function moveTankWithObstacles(tank, dx, dy, bounceOnHit) {
+  const prevX = tank.x;
+  const prevY = tank.y;
+
+  // Move on X axis
+  tank.x += dx;
+  let hit = getObstacleCollision(tank);
+  if (hit) {
+    if (bounceOnHit) {
+      tank.x = prevX;
+      if (tank.dx !== undefined) tank.dx *= -1;
+    } else {
+      if (dx > 0) tank.x = hit.x - tank.size;
+      if (dx < 0) tank.x = hit.x + hit.width;
+    }
+  }
+
+  // Move on Y axis
+  tank.y += dy;
+  hit = getObstacleCollision(tank);
+  if (hit) {
+    if (bounceOnHit) {
+      tank.y = prevY;
+      if (tank.dy !== undefined) tank.dy *= -1;
+    } else {
+      if (dy > 0) tank.y = hit.y - tank.size;
+      if (dy < 0) tank.y = hit.y + hit.height;
+    }
+  }
+
+  clampToCanvas(tank);
+
+  // Final safety: if still colliding after clamp, push out on the smallest axis
+  const postClampHit = getObstacleCollision(tank);
+  if (postClampHit && !bounceOnHit) {
+    const overlapRight = tank.x + tank.size - postClampHit.x;
+    const overlapLeft = postClampHit.x + postClampHit.width - tank.x;
+    const overlapBottom = tank.y + tank.size - postClampHit.y;
+    const overlapTop = postClampHit.y + postClampHit.height - tank.y;
+    const minOverlap = Math.min(overlapRight, overlapLeft, overlapBottom, overlapTop);
+    if (minOverlap === overlapRight) tank.x = postClampHit.x - tank.size;
+    else if (minOverlap === overlapLeft) tank.x = postClampHit.x + postClampHit.width;
+    else if (minOverlap === overlapBottom) tank.y = postClampHit.y - tank.size;
+    else if (minOverlap === overlapTop) tank.y = postClampHit.y + postClampHit.height;
+  }
+
+  if (bounceOnHit) {
+    if (tank.x <= 0 || tank.x + tank.size >= canvas.width) {
+      tank.dx *= -1;
+      tank.x = Math.max(0, Math.min(tank.x, canvas.width - tank.size));
+    }
+    if (tank.y <= 0 || tank.y + tank.size >= canvas.height) {
+      tank.dy *= -1;
+      tank.y = Math.max(0, Math.min(tank.y, canvas.height - tank.size));
+    }
+  }
+}
+
+function getObstacleCollision(tank) {
+  const tankRect = { x: tank.x, y: tank.y, width: tank.size, height: tank.size };
+  return obstacles.find((obs) => rectanglesOverlap(tankRect, obs)) || null;
 }
 
 // Check if tanks collide directly
@@ -491,4 +603,45 @@ function update() {
   checkTankCollision();
 
   animationId = requestAnimationFrame(update);
+}
+
+// Generate random obstacle layout based on the chosen map
+function generateObstacles(map) {
+  const config = mapObstacleStyles[map] || mapObstacleStyles.city;
+  obstacles = [];
+  let attempts = 0;
+  while (obstacles.length < config.count && attempts < config.count * 15) {
+    const size =
+      config.sizeRange[0] + Math.random() * (config.sizeRange[1] - config.sizeRange[0]);
+    const aspect = 0.6 + Math.random() * 0.8; // vary width/height a bit
+    const width = size;
+    const height = size * aspect;
+
+    const x = Math.random() * (canvas.width - width);
+    const y = Math.random() * (canvas.height - height);
+
+    const newObs = { x, y, width, height };
+
+    const buffer = 20;
+    const nearPlayerStart =
+      rectanglesOverlap(newObs, {
+        x: player.x - buffer,
+        y: player.y - buffer,
+        width: player.size + buffer * 2,
+        height: player.size + buffer * 2,
+      }) || rectanglesOverlap(newObs, { x: 0, y: 0, width: 120, height: 120 }); // keep spawn corner clearer
+
+    const overlapsExisting = obstacles.some((obs) =>
+      rectanglesOverlap(
+        { x: newObs.x - 10, y: newObs.y - 10, width: newObs.width + 20, height: newObs.height + 20 },
+        obs
+      )
+    );
+
+    if (!nearPlayerStart && !overlapsExisting) {
+      obstacles.push(newObs);
+    }
+
+    attempts += 1;
+  }
 }
