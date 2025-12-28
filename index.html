@@ -10,7 +10,7 @@
   <main class="page">
     <section id="landing" class="panel">
       <h1 class="title">2D Survival Game</h1>
-      <p class="tagline">Dodge the red square for as long as you can.</p>
+      <p class="tagline">Drive your tank, survive waves, and score as high as you can.</p>
       <p id="statusMessage" class="status hidden"></p>
       <div class="form-group">
         <label for="playerName">Player Name</label>
@@ -43,6 +43,14 @@
         <span id="mapDisplay" class="value"></span>
         <span class="label">Score:</span>
         <span id="scoreDisplay" class="value">0</span>
+        <span class="label">Lives:</span>
+        <span id="livesDisplay" class="value">3</span>
+      </div>
+      <div class="health-row">
+        <span class="label">Health:</span>
+        <div class="health-bar">
+          <div id="healthFill" class="health-fill"></div>
+        </div>
       </div>
       <canvas id="gameCanvas" width="600" height="400"></canvas>
       <p class="hint">Move with W A S D, aim with the mouse, click to shoot. Avoid the red enemy!</p>

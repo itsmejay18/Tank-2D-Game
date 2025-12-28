@@ -8,6 +8,8 @@ const mapSelect = document.getElementById("map");
 const playerDisplay = document.getElementById("playerDisplay");
 const mapDisplay = document.getElementById("mapDisplay");
 const scoreDisplay = document.getElementById("scoreDisplay");
+const livesDisplay = document.getElementById("livesDisplay");
+const healthFill = document.getElementById("healthFill");
 const statusMessage = document.getElementById("statusMessage");
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -25,6 +27,11 @@ const difficultySettings = {
   hard: { enemySpeed: 3.2, enemyBulletSpeed: 4.2, enemyFireDelay: 45 },
 };
 
+const DAMAGE = {
+  enemyBullet: 30,
+  collision: 40,
+};
+
 // Player and enemy tanks
 const player = {
   x: canvas.width * 0.2,
@@ -33,6 +40,10 @@ const player = {
   speed: 3,
   angle: 0,
   fireCooldown: 0,
+  maxHealth: 100,
+  health: 100,
+  lives: 3,
+  invulnTimer: 0,
 };
 
 const enemy = {
@@ -46,12 +57,14 @@ const enemy = {
 };
 
 let bullets = [];
+let healthPickups = [];
 let playerName = "Player";
 let animationId = null;
 let keys = {};
 let mousePos = { x: canvas.width / 2, y: canvas.height / 2 };
 let score = 0;
 let settings = difficultySettings.medium;
+let pickupTimer = 0;
 
 startBtn.addEventListener("click", startGame);
 document.addEventListener("keydown", handleKeyDown);
@@ -75,7 +88,10 @@ function startGame() {
   playerDisplay.textContent = playerName;
   mapDisplay.textContent = mapSelect.options[mapSelect.selectedIndex].text;
   score = 0;
-  scoreDisplay.textContent = score;
+  player.lives = 3;
+  player.health = player.maxHealth;
+  player.invulnTimer = 0;
+  updateHUD();
 
   setCanvasTheme(mapChoice);
   resetPositions();
@@ -89,10 +105,15 @@ function startGame() {
 // Reset player/enemy and bullets for a fresh round
 function resetPositions() {
   bullets = [];
+  healthPickups = [];
 
   player.x = canvas.width * 0.2;
   player.y = canvas.height * 0.5;
   player.fireCooldown = 0;
+  player.health = player.maxHealth;
+  player.invulnTimer = 60; // brief invulnerability after start/reset
+
+  pickupTimer = 240; // spawn first health pickup after a short delay
 
   placeEnemySafely();
   setEnemyVelocity();
@@ -225,7 +246,7 @@ function updateBullets() {
     // Player bullets hitting enemy
     if (bullet.owner === "player" && isPointInsideRect(bullet.x, bullet.y, enemy)) {
       score += 1;
-      scoreDisplay.textContent = score;
+      updateHUD();
       placeEnemySafely();
       setEnemyVelocity();
       enemy.fireCooldown = settings.enemyFireDelay;
@@ -234,12 +255,47 @@ function updateBullets() {
 
     // Enemy bullets hitting player
     if (bullet.owner === "enemy" && isPointInsideRect(bullet.x, bullet.y, player)) {
-      gameOver();
+      applyPlayerDamage(DAMAGE.enemyBullet);
       return false;
     }
 
     return true;
   });
+}
+
+// Spawn health pickups periodically
+function updatePickups() {
+  pickupTimer -= 1;
+  if (pickupTimer <= 0) {
+    spawnHealthPickup();
+    pickupTimer = 360 + Math.random() * 180; // 6-9 seconds roughly
+  }
+
+  // Collect pickups
+  healthPickups = healthPickups.filter((pickup) => {
+    if (isPointInsideRect(pickup.x, pickup.y, player)) {
+      player.health = Math.min(player.maxHealth, player.health + pickup.heal);
+      updateHUD();
+      return false;
+    }
+    return true;
+  });
+}
+
+function spawnHealthPickup() {
+  const size = 16;
+  const heal = 30;
+  const safeDistance = 80;
+  let attempts = 0;
+  while (attempts < 40) {
+    const x = Math.random() * (canvas.width - size);
+    const y = Math.random() * (canvas.height - size);
+    if (isFarFromPlayerAndEnemy(x, y, safeDistance)) {
+      healthPickups.push({ x, y, size, heal });
+      break;
+    }
+    attempts += 1;
+  }
 }
 
 // Make sure a tank stays inside the canvas
@@ -282,6 +338,7 @@ function setEnemyVelocity() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawBullets();
+  drawPickups();
   drawTank(player, "#3adb76", "#a8ffd7", player.angle);
   drawTank(enemy, "#e74c3c", "#f8b4a6", enemy.angle);
 }
@@ -295,6 +352,29 @@ function drawBullets() {
       bullet.size,
       bullet.size
     );
+  });
+}
+
+function drawPickups() {
+  healthPickups.forEach((pickup) => {
+    ctx.save();
+    ctx.fillStyle = "#8ef7c2";
+    ctx.strokeStyle = "#2c9a6b";
+    ctx.lineWidth = 2;
+    ctx.fillRect(pickup.x, pickup.y, pickup.size, pickup.size);
+    ctx.strokeRect(pickup.x, pickup.y, pickup.size, pickup.size);
+    // Draw a simple plus sign
+    ctx.strokeStyle = "#1f5138";
+    ctx.lineWidth = 2;
+    const centerX = pickup.x + pickup.size / 2;
+    const centerY = pickup.y + pickup.size / 2;
+    ctx.beginPath();
+    ctx.moveTo(centerX - 4, centerY);
+    ctx.lineTo(centerX + 4, centerY);
+    ctx.moveTo(centerX, centerY - 4);
+    ctx.lineTo(centerX, centerY + 4);
+    ctx.stroke();
+    ctx.restore();
   });
 }
 
@@ -325,6 +405,15 @@ function isPointInsideRect(px, py, rect) {
   return px >= rect.x && px <= rect.x + rect.size && py >= rect.y && py <= rect.y + rect.size;
 }
 
+function isFarFromPlayerAndEnemy(x, y, minDistance) {
+  const playerCenter = getCenter(player);
+  const enemyCenter = getCenter(enemy);
+  return (
+    Math.hypot(x - playerCenter.x, y - playerCenter.y) > minDistance &&
+    Math.hypot(x - enemyCenter.x, y - enemyCenter.y) > minDistance
+  );
+}
+
 // Check if tanks collide directly
 function checkTankCollision() {
   const hit =
@@ -334,8 +423,39 @@ function checkTankCollision() {
     player.y + player.size > enemy.y;
 
   if (hit) {
+    applyPlayerDamage(DAMAGE.collision);
+  }
+}
+
+// Handle taking damage and lives
+function applyPlayerDamage(amount) {
+  if (player.invulnTimer > 0) return;
+  player.health -= amount;
+  updateHUD();
+
+  if (player.health > 0) return;
+
+  player.lives -= 1;
+  updateHUD();
+
+  if (player.lives > 0) {
+    // Respawn player and clear bullets for fairness
+    player.health = player.maxHealth;
+    player.invulnTimer = 60;
+    bullets = bullets.filter((b) => b.owner === "player"); // clear enemy bullets
+    player.x = canvas.width * 0.2;
+    player.y = canvas.height * 0.5;
+  } else {
     gameOver();
   }
+}
+
+// Update HUD elements (score handled elsewhere when it changes)
+function updateHUD() {
+  const healthPercent = Math.max(0, player.health) / player.maxHealth;
+  healthFill.style.width = `${healthPercent * 100}%`;
+  livesDisplay.textContent = player.lives;
+  scoreDisplay.textContent = score;
 }
 
 // End the game and restart
@@ -363,7 +483,10 @@ function update() {
     enemyShoot();
   }
 
+  if (player.invulnTimer > 0) player.invulnTimer -= 1;
+
   updateBullets();
+  updatePickups();
   draw();
   checkTankCollision();
 
