@@ -93,6 +93,17 @@ body {
   font-size: 13px;
 }
 
+.mobile-opt .toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggle-help {
+  color: #9fb3d1;
+  font-size: 13px;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
@@ -195,6 +206,66 @@ select:focus {
   color: #9fb3d1;
 }
 
+.mobile-controls {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.mobile-controls.hidden {
+  display: none;
+}
+
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 60px);
+  grid-template-rows: repeat(2, 60px);
+  gap: 8px;
+  justify-items: center;
+  align-items: center;
+}
+
+.dpad .up {
+  grid-column: 2 / 3;
+}
+
+.dpad .middle-row {
+  grid-column: 1 / 4;
+  display: grid;
+  grid-template-columns: repeat(3, 60px);
+  gap: 8px;
+}
+
+.dpad-btn,
+.shoot-btn {
+  background: linear-gradient(120deg, #1f2937, #0f172a);
+  color: #e8ecf5;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  width: 60px;
+  height: 60px;
+  font-size: 20px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  touch-action: none;
+}
+
+.dpad-btn:active,
+.shoot-btn:active {
+  transform: translateY(1px);
+}
+
+.shoot-btn {
+  width: 90px;
+  height: 90px;
+  background: radial-gradient(circle at 30% 30%, #f97316, #d946ef);
+  border: none;
+  font-size: 17px;
+  letter-spacing: 1px;
+}
+
 @media (max-width: 720px) {
   .panel {
     padding: 22px;
@@ -203,5 +274,10 @@ select:focus {
   #gameCanvas {
     width: 100%;
     height: auto;
+  }
+
+  .mobile-controls {
+    flex-direction: row;
+    justify-content: center;
   }
 }

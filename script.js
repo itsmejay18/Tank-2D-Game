@@ -11,6 +11,9 @@ const scoreDisplay = document.getElementById("scoreDisplay");
 const livesDisplay = document.getElementById("livesDisplay");
 const healthFill = document.getElementById("healthFill");
 const statusMessage = document.getElementById("statusMessage");
+const mobileToggle = document.getElementById("mobileToggle");
+const mobileControls = document.getElementById("mobileControls");
+const shootBtn = document.getElementById("shootBtn");
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -80,6 +83,7 @@ document.addEventListener("keydown", handleKeyDown);
 document.addEventListener("keyup", handleKeyUp);
 canvas.addEventListener("mousemove", updateMousePosition);
 canvas.addEventListener("mousedown", attemptPlayerShot);
+setupMobileControls();
 
 // Start button launches the game and hides the landing screen
 function startGame() {
@@ -526,6 +530,73 @@ function moveTankWithObstacles(tank, dx, dy, bounceOnHit) {
 function getObstacleCollision(tank) {
   const tankRect = { x: tank.x, y: tank.y, width: tank.size, height: tank.size };
   return obstacles.find((obs) => rectanglesOverlap(tankRect, obs)) || null;
+}
+
+// Setup on-screen mobile controls (touch-friendly)
+function setupMobileControls() {
+  const isTouch =
+    "ontouchstart" in window ||
+    (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+    (navigator.msMaxTouchPoints && navigator.msMaxTouchPoints > 0);
+
+  // Auto-enable on touch devices
+  if (isTouch) {
+    mobileToggle.checked = true;
+  }
+
+  const press = (dir) => {
+    keys[dir] = true;
+  };
+  const release = (dir) => {
+    keys[dir] = false;
+  };
+
+  mobileControls.addEventListener("contextmenu", (e) => e.preventDefault());
+
+  mobileControls.querySelectorAll(".dpad-btn").forEach((btn) => {
+    const dir = btn.dataset.dir;
+    const downHandler = (e) => {
+      e.preventDefault();
+      if (!gameRunning) return;
+      press(mapDirToKey(dir));
+    };
+    const upHandler = (e) => {
+      e.preventDefault();
+      release(mapDirToKey(dir));
+    };
+    btn.addEventListener("pointerdown", downHandler);
+    btn.addEventListener("pointerup", upHandler);
+    btn.addEventListener("pointerleave", upHandler);
+    btn.addEventListener("pointercancel", upHandler);
+    btn.addEventListener("touchstart", downHandler);
+    btn.addEventListener("touchend", upHandler);
+  });
+
+  const shootHandler = (e) => {
+    e.preventDefault();
+    attemptPlayerShot();
+  };
+  shootBtn.addEventListener("pointerdown", shootHandler);
+  shootBtn.addEventListener("touchstart", shootHandler);
+
+  const updateVisibility = () => {
+    if (mobileToggle.checked) {
+      mobileControls.classList.remove("hidden");
+    } else {
+      mobileControls.classList.add("hidden");
+    }
+  };
+
+  mobileToggle.addEventListener("change", updateVisibility);
+  updateVisibility();
+}
+
+function mapDirToKey(dir) {
+  if (dir === "up") return "w";
+  if (dir === "down") return "s";
+  if (dir === "left") return "a";
+  if (dir === "right") return "d";
+  return dir;
 }
 
 // Check if tanks collide directly
