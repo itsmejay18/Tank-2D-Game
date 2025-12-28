@@ -67,6 +67,7 @@ let healthPickups = [];
 let obstacles = [];
 let playerName = "Player";
 let animationId = null;
+let gameRunning = false;
 let keys = {};
 let mousePos = { x: canvas.width / 2, y: canvas.height / 2 };
 let score = 0;
@@ -109,6 +110,7 @@ function startGame() {
   landingScreen.classList.add("hidden");
   gameWrapper.classList.remove("hidden");
 
+  gameRunning = true;
   animationId = requestAnimationFrame(update);
 }
 
@@ -572,8 +574,11 @@ function updateHUD() {
 
 // End the game and restart
 function gameOver() {
-  cancelAnimationFrame(animationId);
+  if (animationId !== null) {
+    cancelAnimationFrame(animationId);
+  }
   animationId = null;
+  gameRunning = false;
   // Show inline message instead of blocking alert so the player can restart easily
   statusMessage.textContent = `Game Over, ${playerName}! Try again.`;
   statusMessage.classList.remove("hidden");
@@ -585,6 +590,8 @@ function gameOver() {
 
 // The main game loop
 function update() {
+  if (!gameRunning) return;
+
   movePlayer();
   moveEnemy();
 
@@ -602,7 +609,9 @@ function update() {
   draw();
   checkTankCollision();
 
-  animationId = requestAnimationFrame(update);
+  if (gameRunning) {
+    animationId = requestAnimationFrame(update);
+  }
 }
 
 // Generate random obstacle layout based on the chosen map
