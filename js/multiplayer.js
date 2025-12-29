@@ -13,6 +13,9 @@
   let seenBullets = new Set();
   let positionInterval = null;
   let pendingStart = false;
+  let unsubPlayers = null;
+  let unsubBulletsAdd = null;
+  let unsubBulletsRemove = null;
 
   const remotePalette = {
     body: "#4ecdc4",
@@ -44,17 +47,33 @@
     bulletsRef = dbRef(rtdb, `rooms/${ROOM_ID}/bullets`);
     writePlayerState();
 
-    get("dbOnValue")(playersRef, (snap) => {
+    if (unsubPlayers) unsubPlayers();
+    unsubPlayers = get("dbOnValue")(playersRef, (snap) => {
       const data = snap.val() || {};
-      remotePlayers = {};
+      const next = {};
       Object.keys(data).forEach((id) => {
         if (id === localPlayerId) return;
-        remotePlayers[id] = data[id];
+        const d = data[id] || {};
+        const existing = remotePlayers[id] || {};
+        const targetX = Number(d.x) || 0;
+        const targetY = Number(d.y) || 0;
+        next[id] = {
+          name: d.name || "Player",
+          targetX,
+          targetY,
+          renderX: existing.renderX ?? targetX,
+          renderY: existing.renderY ?? targetY,
+          angle: Number(d.rotation ?? d.angle ?? 0),
+          hp: d.hp,
+          alive: d.alive !== false,
+        };
       });
+      remotePlayers = next;
       console.info("[MP] Players snapshot:", Object.keys(remotePlayers));
     });
 
-    get("dbOnChildAdded")(bulletsRef, (snap) => {
+    if (unsubBulletsAdd) unsubBulletsAdd();
+    unsubBulletsAdd = get("dbOnChildAdded")(bulletsRef, (snap) => {
       const id = snap.key;
       if (seenBullets.has(id)) return;
       seenBullets.add(id);
@@ -71,7 +90,8 @@
       bullets.push(bullet);
     });
 
-    get("dbOnChildRemoved")(bulletsRef, (snap) => {
+    if (unsubBulletsRemove) unsubBulletsRemove();
+    unsubBulletsRemove = get("dbOnChildRemoved")(bulletsRef, (snap) => {
       const id = snap.key;
       bullets = bullets.filter((b) => b.id !== id);
       seenBullets.delete(id);
@@ -85,6 +105,10 @@
     const rtdb = get("rtdb");
     const dbRef = get("dbRef");
     const dbRemove = get("dbRemove");
+    if (unsubPlayers) unsubPlayers();
+    if (unsubBulletsAdd) unsubBulletsAdd();
+    if (unsubBulletsRemove) unsubBulletsRemove();
+    unsubPlayers = unsubBulletsAdd = unsubBulletsRemove = null;
     if (localPlayerId && playersRef) {
       dbRemove(dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`)).catch(() => {});
     }
@@ -101,7 +125,10 @@
     Object.keys(remotePlayers).forEach((id) => {
       const rp = remotePlayers[id];
       if (!rp || rp.alive === false) return;
-      const dummy = { x: rp.x || 0, y: rp.y || 0, size: player.size, angle: rp.angle || 0 };
+      // Light interpolation for smoother motion
+      rp.renderX = lerp(rp.renderX ?? rp.targetX, rp.targetX, 0.18);
+      rp.renderY = lerp(rp.renderY ?? rp.targetY, rp.targetY, 0.18);
+      const dummy = { x: rp.renderX, y: rp.renderY, size: player.size, angle: rp.angle || 0 };
       drawTank(dummy, remotePalette, dummy.angle);
       if (typeof drawNameTag === "function") drawNameTag(dummy, rp.name || "Player", "#8ff1e9");
     });
@@ -118,6 +145,7 @@
       x: p.x,
       y: p.y,
       angle: p.angle || 0,
+      rotation: p.angle || 0,
       hp: p.health,
       alive: p.health > 0,
       ts: Date.now(),
