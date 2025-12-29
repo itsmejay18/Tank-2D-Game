@@ -115,7 +115,7 @@ document.addEventListener("keydown", handleKeyDown);
 document.addEventListener("keyup", handleKeyUp);
 canvas.addEventListener("mousemove", updateMousePosition);
 canvas.addEventListener("mousedown", () => attemptPlayerShot());
-canvas.addEventListener("pointerdown", handleJoystickStart);
+if (joystickEl) joystickEl.addEventListener("pointerdown", handleJoystickStart);
 window.addEventListener("pointermove", handleJoystickMove);
 window.addEventListener("pointerup", handleJoystickEnd);
 window.addEventListener("pointercancel", handleJoystickEnd);
@@ -596,6 +596,7 @@ function handleJoystickStart(e) {
   joystickState.base.y = rect.height / 2;
   joystickEl.classList.add("active");
   centerJoystickKnob();
+  handleJoystickMove(e); // update vector immediately based on press position
 }
 
 function handleJoystickMove(e) {

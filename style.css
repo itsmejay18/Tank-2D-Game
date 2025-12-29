@@ -279,6 +279,7 @@ select:focus {
   pointer-events: auto;
   opacity: 0.85;
   transition: opacity 0.12s ease;
+  touch-action: none;
 }
 
 .joystick.active {
