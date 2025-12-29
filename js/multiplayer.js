@@ -118,7 +118,7 @@
       hp: p.health,
       alive: p.health > 0,
       ts: Date.now(),
-    }).catch(() => {});
+    }).catch((err) => console.warn("RTDB player update failed:", err?.message || err));
   }
 
   function publishNetworkBullet(bullet) {
@@ -136,7 +136,7 @@
       vx,
       vy,
       ts: Date.now(),
-    }).catch(() => {});
+    }).catch((err) => console.warn("RTDB bullet publish failed:", err?.message || err));
   }
 
   function cleanupMultiplayer() {
