@@ -21,6 +21,8 @@ const mobileToggle = document.getElementById("mobileToggle");
 const mobileControls = document.getElementById("mobileControls");
 const shootBtn = document.getElementById("shootBtn");
 const dashBtn = document.getElementById("dashBtn");
+const joystickEl = document.getElementById("joystick");
+const joystickKnob = joystickEl ? joystickEl.querySelector(".joystick-knob") : null;
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const gameOverModal = document.getElementById("gameOverModal");
@@ -92,6 +94,14 @@ let keys = {};
 let keyboardKeys = {};
 let touchKeyCounts = {};
 let mousePos = { x: canvas.width / 2, y: canvas.height / 2 };
+const joystickState = {
+  active: false,
+  pointerId: null,
+  base: { x: 0, y: 0 },
+  vector: { x: 0, y: 0 },
+  distance: 0,
+  maxRadius: 70,
+};
 let score = 0;
 let settings = difficultySettings.medium;
 let pickupTimer = 0;
@@ -105,8 +115,12 @@ document.addEventListener("keydown", handleKeyDown);
 document.addEventListener("keyup", handleKeyUp);
 canvas.addEventListener("mousemove", updateMousePosition);
 canvas.addEventListener("mousedown", () => attemptPlayerShot());
+canvas.addEventListener("pointerdown", handleJoystickStart);
+window.addEventListener("pointermove", handleJoystickMove);
+window.addEventListener("pointerup", handleJoystickEnd);
+window.addEventListener("pointercancel", handleJoystickEnd);
 setupMobileControls();
-if (modalRestart) modalRestart.addEventListener("click", () => window.location.reload());
+if (modalRestart) modalRestart.addEventListener("click", restartGame);
 if (modalQuit) modalQuit.addEventListener("click", returnToMenu);
 
 // Start the game: keep UI, just toggle panels
@@ -135,12 +149,19 @@ function startGame() {
   pickups = [];
   enemies = [];
   particles = [];
+  resetJoystick();
   startWave(wave);
 
   landingScreen.classList.add("hidden");
   gameWrapper.classList.remove("hidden");
   gameRunning = true;
   animationId = requestAnimationFrame(update);
+}
+
+// Restart from the game-over modal using the current selections
+function restartGame() {
+  hideGameOverModal();
+  startGame();
 }
 
 // Reset player health, lives, dash, timers
@@ -225,17 +246,27 @@ function enemyShoot(enemy) {
 function movePlayer() {
   let dx = 0;
   let dy = 0;
-  if (keys["a"] || keys["arrowleft"]) dx -= 1;
-  if (keys["d"] || keys["arrowright"]) dx += 1;
-  if (keys["w"] || keys["arrowup"]) dy -= 1;
-  if (keys["s"] || keys["arrowdown"]) dy += 1;
+  const boost = player.dashActive > 0 ? 2.4 : 1;
 
-  if (dx !== 0 || dy !== 0) {
-    const len = Math.hypot(dx, dy);
-    const boost = player.dashActive > 0 ? 2.4 : 1;
-    dx = (dx / len) * player.speed * boost;
-    dy = (dy / len) * player.speed * boost;
+  const mobile = isMobileMode();
+  if (mobile && joystickState.active && joystickState.distance > 0) {
+    // Use the virtual joystick vector for 360° movement
+    const speedFactor = Math.min(1, joystickState.distance / joystickState.maxRadius);
+    dx = joystickState.vector.x * player.speed * boost * speedFactor;
+    dy = joystickState.vector.y * player.speed * boost * speedFactor;
     player.angle = Math.atan2(dy, dx);
+  } else {
+    // Keyboard movement (desktop or fallback on mobile)
+    if (keys["a"] || keys["arrowleft"]) dx -= 1;
+    if (keys["d"] || keys["arrowright"]) dx += 1;
+    if (keys["w"] || keys["arrowup"]) dy -= 1;
+    if (keys["s"] || keys["arrowdown"]) dy += 1;
+    if (dx !== 0 || dy !== 0) {
+      const len = Math.hypot(dx, dy);
+      dx = (dx / len) * player.speed * boost;
+      dy = (dy / len) * player.speed * boost;
+      if (mobile) player.angle = Math.atan2(dy, dx); // keep angle tied to movement only on mobile
+    }
   }
 
   moveTankWithObstacles(player, dx, dy, false);
@@ -432,6 +463,7 @@ function returnToMenu() {
   animationId = null;
   gameRunning = false;
   hideGameOverModal();
+  resetJoystick();
   landingScreen.classList.remove("hidden");
   gameWrapper.classList.add("hidden");
 }
@@ -520,31 +552,6 @@ function setupMobileControls() {
   if (!mobileControls) return;
   const isTouch = "ontouchstart" in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
   if (isTouch) mobileToggle.checked = true;
-  const pressKeys = (keyList) => {
-    keyList.forEach((k) => {
-      touchKeyCounts[k] = (touchKeyCounts[k] || 0) + 1;
-      keys[k] = true;
-    });
-  };
-  const releaseKeys = (keyList) => {
-    keyList.forEach((k) => {
-      if (touchKeyCounts[k]) touchKeyCounts[k] -= 1;
-      const stillHeld = touchKeyCounts[k] > 0;
-      const keyboardHeld = keyboardKeys[k];
-      keys[k] = stillHeld || keyboardHeld;
-    });
-  };
-  mobileControls.addEventListener("contextmenu", (e) => e.preventDefault());
-  mobileControls.querySelectorAll(".pad-btn").forEach((btn) => {
-    const dir = btn.dataset.dir;
-    const mapped = mapDirToKeys(dir);
-    const down = (e) => { e.preventDefault(); if (!gameRunning) return; pressKeys(mapped); };
-    const up = (e) => { e.preventDefault(); releaseKeys(mapped); };
-    btn.addEventListener("pointerdown", down);
-    btn.addEventListener("pointerup", up);
-    btn.addEventListener("pointerleave", up);
-    btn.addEventListener("pointercancel", up);
-  });
   const shootHandler = (e) => { e.preventDefault(); attemptPlayerShot(); };
   shootBtn.addEventListener("pointerdown", shootHandler);
   if (dashBtn) {
@@ -553,8 +560,12 @@ function setupMobileControls() {
   }
 
   const toggleVisibility = () => {
-    if (mobileToggle.checked) mobileControls.classList.remove("hidden");
-    else mobileControls.classList.add("hidden");
+    if (mobileToggle.checked) {
+      mobileControls.classList.remove("hidden");
+    } else {
+      mobileControls.classList.add("hidden");
+      resetJoystick();
+    }
   };
   mobileToggle.addEventListener("change", toggleVisibility);
   toggleVisibility();
@@ -565,6 +576,70 @@ function applyDesktopMouseAim() {
   if (isMobileMode()) return;
   const c = getCenter(player);
   player.angle = Math.atan2(mousePos.y - c.y, mousePos.x - c.x);
+}
+
+// Virtual joystick helpers (mobile only)
+function handleJoystickStart(e) {
+  if (!isMobileMode() || !gameRunning) return;
+  // Only react to touches/presses on the left side of the canvas
+  const rect = canvas.getBoundingClientRect();
+  const panelRect = gameWrapper.getBoundingClientRect();
+  const relX = e.clientX - rect.left;
+  if (relX > rect.width * 0.6) return;
+  e.preventDefault();
+  joystickState.active = true;
+  joystickState.pointerId = e.pointerId;
+  joystickState.base.x = relX;
+  joystickState.base.y = e.clientY - rect.top;
+  if (joystickEl) {
+    joystickEl.style.left = `${e.clientX - panelRect.left}px`;
+    joystickEl.style.top = `${e.clientY - panelRect.top}px`;
+    joystickEl.classList.remove("hidden");
+    joystickEl.classList.add("active");
+  }
+  centerJoystickKnob();
+}
+
+function handleJoystickMove(e) {
+  if (!joystickState.active || e.pointerId !== joystickState.pointerId) return;
+  const rect = canvas.getBoundingClientRect();
+  const currentX = e.clientX - rect.left;
+  const currentY = e.clientY - rect.top;
+  const dx = currentX - joystickState.base.x;
+  const dy = currentY - joystickState.base.y;
+  const dist = Math.hypot(dx, dy);
+  const maxR = joystickState.maxRadius;
+  const clampedDist = Math.min(dist, maxR);
+  const angle = Math.atan2(dy, dx);
+  const offsetX = Math.cos(angle) * clampedDist;
+  const offsetY = Math.sin(angle) * clampedDist;
+  joystickState.vector.x = Math.cos(angle);
+  joystickState.vector.y = Math.sin(angle);
+  joystickState.distance = clampedDist;
+  if (joystickKnob) {
+    joystickKnob.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
+  }
+}
+
+function handleJoystickEnd(e) {
+  if (!joystickState.active || e.pointerId !== joystickState.pointerId) return;
+  resetJoystick();
+}
+
+function resetJoystick() {
+  joystickState.active = false;
+  joystickState.pointerId = null;
+  joystickState.vector = { x: 0, y: 0 };
+  joystickState.distance = 0;
+  centerJoystickKnob();
+  if (joystickEl) {
+    joystickEl.classList.remove("active");
+    joystickEl.classList.add("hidden");
+  }
+}
+
+function centerJoystickKnob() {
+  if (joystickKnob) joystickKnob.style.transform = "translate(-50%, -50%)";
 }
 
 // Tank collision

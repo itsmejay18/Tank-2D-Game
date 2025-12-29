@@ -31,6 +31,7 @@ body {
   flex-direction: column;
   gap: 14px;
   text-align: center;
+  position: relative; /* allow joystick overlay positioning */
 }
 
 .hidden {
@@ -228,40 +229,6 @@ select:focus {
   display: none;
 }
 
-.pad-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 64px);
-  grid-template-rows: repeat(3, 64px);
-  gap: 8px;
-  justify-items: center;
-  align-items: center;
-}
-
-.pad-placeholder {
-  width: 64px;
-  height: 64px;
-  pointer-events: none;
-}
-
-.pad-btn,
-.shoot-btn {
-  background: linear-gradient(120deg, #1f2937, #0f172a);
-  color: #e8ecf5;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  width: 64px;
-  height: 64px;
-  font-size: 20px;
-  font-weight: 700;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-  touch-action: none;
-}
-
-.pad-btn:active,
-.shoot-btn:active {
-  transform: translateY(1px);
-}
-
 .action-buttons {
   display: flex;
   flex-direction: column;
@@ -270,12 +237,23 @@ select:focus {
 }
 
 .shoot-btn {
+  background: linear-gradient(120deg, #1f2937, #0f172a);
+  color: #e8ecf5;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
   width: 90px;
   height: 90px;
+  font-size: 20px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  touch-action: none;
   background: radial-gradient(circle at 30% 30%, #f97316, #d946ef);
   border: none;
-  font-size: 17px;
   letter-spacing: 1px;
+}
+
+.shoot-btn:active {
+  transform: translateY(1px);
 }
 
 .dash-btn {
@@ -291,6 +269,46 @@ select:focus {
 
 .dash-btn:active {
   transform: translateY(1px);
+}
+
+/* Virtual joystick overlay */
+.joystick {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  transform: translate(-50%, -50%);
+}
+
+.joystick.active {
+  opacity: 1;
+}
+
+.joystick-base,
+.joystick-knob {
+  position: absolute;
+  border-radius: 50%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 20px rgba(74, 209, 255, 0.35);
+}
+
+.joystick-base {
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(74, 209, 255, 0.35), rgba(31, 41, 55, 0.8));
+  border: 2px solid rgba(74, 209, 255, 0.6);
+}
+
+.joystick-knob {
+  width: 70px;
+  height: 70px;
+  background: radial-gradient(circle, rgba(92, 207, 230, 0.9), rgba(6, 16, 32, 0.9));
+  border: 2px solid rgba(92, 207, 230, 0.8);
+  box-shadow: 0 0 25px rgba(92, 207, 230, 0.5);
 }
 
 /* Modal overlay for game over */
