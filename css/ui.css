@@ -1,0 +1,236 @@
+/* Landing, forms, buttons, HUD, and footer */
+
+#titleSection {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+#titleSection h1 {
+  font-size: 2.2rem;
+  letter-spacing: 1px;
+  color: #aafcff;
+  text-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
+}
+
+#titleSection h1 {
+  font-size: 2.2rem;
+  letter-spacing: 1px;
+  color: #aafcff;
+  text-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
+}
+
+.title {
+  font-size: 32px;
+  letter-spacing: 1px;
+}
+
+#titleSection .tagline {
+  max-width: 750px;
+  margin: 10px auto 0 auto;
+  font-size: 0.95rem;
+  line-height: 1.5rem;
+  opacity: 0.9;
+  color: #d0f8ff;
+}
+
+.tagline {
+  color: #9fb3d1;
+  margin-bottom: 4px;
+}
+
+.status {
+  background: rgba(231, 76, 60, 0.12);
+  border: 1px solid rgba(231, 76, 60, 0.4);
+  color: #ffc7bd;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.brand-mark {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0 4px;
+}
+
+.brand-logo {
+  width: 140px;
+  height: auto;
+  filter: drop-shadow(0 8px 20px rgba(0, 255, 200, 0.35));
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.appearance .color-row,
+.appearance .shape-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.color-field,
+.shape-field {
+  background: #12192c;
+  border: 1px solid #2d3a5c;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
+}
+
+.color-field span,
+.shape-field span {
+  color: #c7d7f4;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.color-field input[type="color"] {
+  width: 100%;
+  height: 40px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.mobile-opt .toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggle-help {
+  color: #9fb3d1;
+  font-size: 13px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+label {
+  font-weight: 600;
+  color: #c7d7f4;
+}
+
+input,
+select {
+  background: #12192c;
+  color: #e8ecf5;
+  border: 1px solid #2d3a5c;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 15px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #5ccfe6;
+  box-shadow: 0 0 0 3px rgba(92, 207, 230, 0.25);
+}
+
+.primary {
+  background: linear-gradient(120deg, #53d397, #4ad1ff);
+  color: #061020;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(77, 214, 242, 0.35);
+}
+
+.secondary {
+  background: #1f2937;
+  color: #e8ecf5;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button-row {
+  display: flex;
+  justify-content: center;
+}
+
+.hud {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  align-items: center;
+  font-size: 15px;
+}
+
+.label {
+  color: #9fb3d1;
+}
+
+.value {
+  font-weight: 700;
+  color: #f6f8ff;
+}
+
+.health-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+.health-bar {
+  width: 220px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.health-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(120deg, #4ade80, #22c55e);
+  transition: width 0.15s ease;
+}
+
+.power-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  font-size: 14px;
+  color: #9fb3d1;
+}
+
+.hint {
+  color: #9fb3d1;
+}
+
+#creatorFooter {
+  text-align: center;
+  margin-top: 16px;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+  opacity: 0.6;
+  color: #cfefff;
+  letter-spacing: 0.4px;
+  user-select: none;
+  pointer-events: none;
+}

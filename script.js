@@ -84,7 +84,7 @@ const player = {
   fireCooldown: 0,
   maxHealth: 100,
   health: 100,
-  lives: 3,
+  lives: 0,
   invulnTimer: 0,
   dashCooldown: 0,
   dashActive: 0,
@@ -247,7 +247,7 @@ function resetPlayerState() {
   player.y = canvas.height * 0.5;
   player.fireCooldown = 0;
   player.health = player.maxHealth;
-  player.lives = 3;
+  player.lives = 0;
   player.invulnTimer = 60;
   player.dashCooldown = 0;
   player.dashActive = 0;
@@ -461,6 +461,8 @@ function spawnPickup() {
 function applyPickup(pickup) {
   if (pickup.type === "health") {
     player.health = Math.min(player.maxHealth, player.health + 30);
+    // Each full heal collected also grants an extra life; unlimited cap
+    player.lives += 1;
     playTone(520, 0.1, "triangle");
   } else if (pickup.type === "rapid") {
     player.rapidTimer = 360;
@@ -496,17 +498,18 @@ function applyPlayerDamage(amount) {
   playTone(160, 0.08, "sawtooth");
   updateHUD();
   if (player.health > 0) return;
-  player.lives -= 1;
-  updateHUD();
-  if (player.lives > 0) {
-    player.health = player.maxHealth;
-    player.invulnTimer = 60;
-    bullets = bullets.filter((b) => b.owner === "player");
-    player.x = canvas.width * 0.2;
-    player.y = canvas.height * 0.5;
-  } else {
+  // If no lives banked, game over. Otherwise consume one life and respawn.
+  if (player.lives <= 0) {
     gameOver();
+    return;
   }
+  player.lives -= 1;
+  player.health = player.maxHealth;
+  player.invulnTimer = 60;
+  bullets = bullets.filter((b) => b.owner === "player");
+  player.x = canvas.width * 0.2;
+  player.y = canvas.height * 0.5;
+  updateHUD();
 }
 
 // HUD updates

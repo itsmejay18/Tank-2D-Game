@@ -1,0 +1,149 @@
+/* Canvas, controls, joystick, modals */
+
+#gameCanvas {
+  margin: 16px auto 8px;
+  display: block;
+  background: #12192c;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 20px rgba(83, 211, 151, 0.45), 0 0 40px rgba(74, 209, 255, 0.25);
+  cursor: crosshair;
+}
+
+.mobile-controls {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.mobile-controls.hidden {
+  display: none;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.shoot-btn {
+  background: linear-gradient(120deg, #1f2937, #0f172a);
+  color: #e8ecf5;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  width: 90px;
+  height: 90px;
+  font-size: 20px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  touch-action: none;
+  background: radial-gradient(circle at 30% 30%, #f97316, #d946ef);
+  border: none;
+  letter-spacing: 1px;
+}
+
+.shoot-btn:active {
+  transform: translateY(1px);
+}
+
+.dash-btn {
+  width: 90px;
+  height: 90px;
+  background: radial-gradient(circle at 30% 30%, #38bdf8, #6366f1);
+  border: none;
+  color: #e8ecf5;
+  font-weight: 700;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.dash-btn:active {
+  transform: translateY(1px);
+}
+
+.joystick {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  pointer-events: auto;
+  opacity: 0.85;
+  transition: opacity 0.12s ease;
+  touch-action: none;
+}
+
+.joystick.active {
+  opacity: 1;
+}
+
+.joystick-base,
+.joystick-knob {
+  position: absolute;
+  border-radius: 50%;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 20px rgba(74, 209, 255, 0.35);
+  pointer-events: none;
+}
+
+.joystick-base {
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(74, 209, 255, 0.35), rgba(31, 41, 55, 0.8));
+  border: 2px solid rgba(74, 209, 255, 0.6);
+}
+
+.joystick-knob {
+  width: 70px;
+  height: 70px;
+  background: radial-gradient(circle, rgba(92, 207, 230, 0.9), rgba(6, 16, 32, 0.9));
+  border: 2px solid rgba(92, 207, 230, 0.8);
+  box-shadow: 0 0 25px rgba(92, 207, 230, 0.5);
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-content {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 20px;
+  width: min(420px, 90%);
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+.modal-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  #gameCanvas {
+    width: 100%;
+    height: auto;
+  }
+
+  .mobile-controls {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
