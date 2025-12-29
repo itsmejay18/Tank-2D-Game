@@ -45,15 +45,11 @@ const shareBtn = document.getElementById("shareBtn");
 // Map visuals
 const mapColors = {
   city: "#222a38",
-  forest: "#0f2f1b",
-  desert: "#c6ad6b",
 };
 
 // Map obstacle styles and destructible chance
 const mapObstacleStyles = {
   city: { color: "#475569", stroke: "#7c90a8", count: 5, sizeRange: [60, 120], destructibleChance: 0.4, hpRange: [80, 130] },
-  forest: { color: "#1f3b29", stroke: "#3f6f52", count: 4, sizeRange: [70, 130], destructibleChance: 0.5, hpRange: [90, 140] },
-  desert: { color: "#b38745", stroke: "#d8b278", count: 4, sizeRange: [70, 140], destructibleChance: 0.45, hpRange: [80, 150] },
 };
 
 // Difficulty multipliers
@@ -371,25 +367,6 @@ function buildMazeWalls() {
       V(cw - inset - 220, ch / 2 - 80, ch / 2 + 80);
       H(cw / 2 - 120, cw / 2 + 120, ch / 2 - 140);
       H(cw / 2 - 100, cw / 2 + 100, ch / 2 + 140);
-    },
-    forest: () => {
-      const cover = 100;
-      H(inset + 90, cw - inset - 90, ch / 2 - 160);
-      H(inset + 140, cw / 2 - 80, ch / 2 - 60);
-      H(cw / 2 + 80, cw - inset - 140, ch / 2 - 60);
-      V(inset + 160, inset + 120, ch - inset - 180);
-      V(cw - inset - 170, inset + 140, ch - inset - 200);
-      H(inset + 120, inset + 120 + cover, ch / 2 + 120);
-      H(cw - inset - 120 - cover, cw - inset - 120, ch / 2 + 180);
-    },
-    desert: () => {
-      const cover = 180;
-      H(inset + 60, inset + 60 + cover, inset + 140);
-      H(cw - inset - 60 - cover, cw - inset - 60, inset + 200);
-      H(inset + 140, cw - inset - 140, ch / 2);
-      V(cw / 2 - 220, inset + 180, ch - inset - 180);
-      V(cw / 2 + 200, inset + 140, ch - inset - 200);
-      H(cw / 2 - 160, cw / 2 + 160, ch - inset - 180);
     },
   };
 
