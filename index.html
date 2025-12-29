@@ -166,7 +166,8 @@
     </div>
   </div>
 
-  <script type="module" src="js/firebase.js"></script>
+  <!-- Cache-busted to ensure latest Firebase config (regional RTDB URL) loads -->
+  <script type="module" src="js/firebase.js?v=2"></script>
   <script src="js/utils.js" defer></script>
   <script src="js/controls.js" defer></script>
   <script src="js/player.js" defer></script>
