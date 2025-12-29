@@ -37,6 +37,7 @@ function attemptPlayerShot() {
     createBullet(playerCenter.x, playerCenter.y, angle, bulletSpeed, "player", {
       piercing: player.pierceTimer > 0,
       color: player.pierceTimer > 0 ? "#60a5fa" : null,
+      maxBounces: player.pierceTimer > 0 ? 4 : 0,
     })
   );
   player.fireCooldown = player.rapidTimer > 0 ? 6 : 12;

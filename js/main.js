@@ -29,3 +29,19 @@ window.addEventListener("pointercancel", handleJoystickEnd);
 setupMobileControls();
 if (modalRestart) modalRestart.addEventListener("click", restartGame);
 if (modalQuit) modalQuit.addEventListener("click", returnToMenu);
+
+// Load leaderboard once on startup (if Firebase configured)
+if (typeof showLeaderboard === "function") {
+  try { showLeaderboard(); } catch (e) { console.warn("Leaderboard load failed:", e); }
+}
+
+// Prefill stored player name if available
+try {
+  const stored = localStorage.getItem("playerName");
+  if (stored && playerNameField) {
+    playerNameField.value = stored;
+    window.currentPlayerName = stored;
+  }
+} catch (e) {
+  // ignore storage errors
+}

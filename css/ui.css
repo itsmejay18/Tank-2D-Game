@@ -61,6 +61,46 @@
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.panel-sub {
+  background: rgba(12, 17, 31, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.leaderboard-header {
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #cfefff;
+  letter-spacing: 0.5px;
+}
+
+.leaderboard-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 60px 1fr 80px;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  color: #e8ecf5;
+  font-weight: 600;
+}
+
+.leaderboard-row.header {
+  background: rgba(83, 211, 151, 0.08);
+  border: 1px solid rgba(83, 211, 151, 0.2);
+  color: #aafcff;
+}
+
 .appearance .color-row,
 .appearance .shape-row {
   display: flex;

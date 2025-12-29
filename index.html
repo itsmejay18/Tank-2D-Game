@@ -23,6 +23,19 @@
         <img src="image/favicon.PNG" alt="Steel Dash emblem" class="brand-logo">
       </div>
       <div class="form-group">
+        <label for="playerNameInput">Player Name</label>
+        <input id="playerNameInput" type="text" maxlength="20" placeholder="Enter your name" required>
+      </div>
+      <div id="leaderboard" class="panel-sub">
+        <div class="leaderboard-header">Top Scores</div>
+        <div class="leaderboard-table">
+          <div class="leaderboard-row header">
+            <span>Rank</span><span>Player</span><span>Score</span>
+          </div>
+          <div id="leaderboardBody" class="leaderboard-body">Loading...</div>
+        </div>
+      </div>
+      <div class="form-group">
         <label for="map">Map Theme</label>
         <select id="map">
           <option value="city">City (dark)</option>
@@ -151,6 +164,8 @@
   <script src="js/physics.js" defer></script>
   <script src="js/game.js" defer></script>
   <script src="js/main.js" defer></script>
+  <script type="module" src="js/firebase.js"></script>
+  <script type="module" src="js/leaderboard.js"></script>
 </body>
 </html>
 

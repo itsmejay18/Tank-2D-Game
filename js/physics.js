@@ -11,11 +11,18 @@ function createBullet(x, y, angle, speed, owner, options = {}) {
     owner,
     piercing: !!options.piercing,
     color: options.color || null,
+    bounces: 0,
+    maxBounces: options.maxBounces ?? (options.piercing ? 4 : 0),
+    life: options.life || 600, // simple lifetime cap to avoid infinite projectiles
   };
 }
 
 function updateBullets() {
   bullets = bullets.filter((bullet) => {
+    // Age out old bullets
+    bullet.life -= 1;
+    if (bullet.life <= 0) return false;
+
     bullet.x += bullet.vx;
     bullet.y += bullet.vy;
 
@@ -24,8 +31,18 @@ function updateBullets() {
     const outRight = bullet.x > canvas.width;
     const outTop = bullet.y < 0;
     const outBottom = bullet.y > canvas.height;
-    if (bullet.owner === "player" && bullet.piercing && (outLeft || outRight)) bullet.vx *= -1;
-    if (bullet.owner === "player" && bullet.piercing && (outTop || outBottom)) bullet.vy *= -1;
+    if (bullet.owner === "player" && bullet.piercing) {
+      let bounced = false;
+      if (outLeft || outRight) { bullet.vx *= -1; bounced = true; }
+      if (outTop || outBottom) { bullet.vy *= -1; bounced = true; }
+      if (bounced) {
+        bullet.bounces += 1;
+        if (bullet.bounces > bullet.maxBounces) return false;
+        // Keep inside bounds after bounce
+        bullet.x = clamp(bullet.x, 0, canvas.width);
+        bullet.y = clamp(bullet.y, 0, canvas.height);
+      }
+    }
 
     if (bullet.owner === "player" && !bullet.piercing) {
       if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) return false;

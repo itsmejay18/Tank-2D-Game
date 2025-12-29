@@ -8,6 +8,7 @@ const startBtn = document.getElementById("startBtn");
 const customizeBtn = document.getElementById("customizeBtn");
 const customizeBack = document.getElementById("customizeBack");
 const playerNameInput = document.getElementById("playerName");
+const playerNameField = document.getElementById("playerNameInput");
 const mapSelect = document.getElementById("map");
 const playerDisplay = document.getElementById("playerDisplay");
 const mapDisplay = document.getElementById("mapDisplay");
@@ -168,7 +169,14 @@ function startGame() {
   landingScreen.classList.add("hidden");
   gameWrapper.classList.remove("hidden");
 
-  playerName = (playerNameInput ? playerNameInput.value.trim() : "") || "Player";
+  // Player name handling: read, trim, validate, and store globally + localStorage
+  let enteredName = playerNameField ? playerNameField.value.trim() : "";
+  if (enteredName.length === 0) enteredName = "Player";
+  if (enteredName.length > 20) enteredName = enteredName.slice(0, 20);
+  playerName = enteredName;
+  window.currentPlayerName = playerName;
+  try { localStorage.setItem("playerName", playerName); } catch (e) { /* ignore storage errors */ }
+
   const mapChoice = mapSelect.value;
   currentMap = mapChoice;
   setWaveDifficulty(1);
@@ -230,6 +238,9 @@ function gameOver() {
   if (animationId !== null) cancelAnimationFrame(animationId);
   animationId = null;
   gameRunning = false;
+  if (typeof saveScore === "function") {
+    try { saveScore(window.currentPlayerName || playerName, score); } catch (e) { console.warn("saveScore failed:", e); }
+  }
   if (gameOverModal) {
     const text = document.getElementById("gameOverText");
     if (text) text.textContent = `Game Over, ${playerName}! Play again?`;
