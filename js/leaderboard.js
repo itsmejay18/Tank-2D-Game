@@ -7,6 +7,9 @@ import {
   limit,
   getDocs,
   serverTimestamp,
+  where,
+  updateDoc,
+  doc,
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
 
 const SCORES_COLLECTION = "scores";
@@ -16,11 +19,24 @@ export async function saveScore(playerName, score) {
   const ref = scoresRef();
   if (!ref) return;
   try {
-    await addDoc(ref, {
-      playerName: playerName || "Player",
-      score: Number(score) || 0,
-      createdAt: serverTimestamp(),
-    });
+    const safeName = (playerName || "Player").trim().slice(0, 20) || "Player";
+    const scoreNum = Number(score) || 0;
+    const existingQ = query(ref, where("playerName", "==", safeName), limit(1));
+    const snap = await getDocs(existingQ);
+    if (!snap.empty) {
+      const docSnap = snap.docs[0];
+      const prev = typeof docSnap.data().score === "number" ? docSnap.data().score : 0;
+      if (scoreNum > prev) {
+        const docRef = doc(db, SCORES_COLLECTION, docSnap.id);
+        await updateDoc(docRef, { score: scoreNum, createdAt: serverTimestamp() });
+      }
+    } else {
+      await addDoc(ref, {
+        playerName: safeName,
+        score: scoreNum,
+        createdAt: serverTimestamp(),
+      });
+    }
   } catch (err) {
     console.error("Error saving score:", err);
   }
