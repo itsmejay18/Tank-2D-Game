@@ -4,6 +4,7 @@
 (function () {
   // Helper accessors so we always read the latest Firebase globals even if the module loads later.
   const get = (k) => window[k];
+  const ROOM_ID = "global-room"; // all online players share this room
 
   let localPlayerId = null;
   let playersRef = null;
@@ -11,6 +12,7 @@
   let remotePlayers = {};
   let seenBullets = new Set();
   let positionInterval = null;
+  let pendingStart = false;
 
   const remotePalette = {
     body: "#4ecdc4",
@@ -24,10 +26,20 @@
   function startMultiplayerLayer() {
     const rtdb = get("rtdb");
     const dbRef = get("dbRef");
-    if (!rtdb || !dbRef || !get("dbOnValue") || !get("dbOnChildAdded") || !get("dbOnChildRemoved")) return;
+    // If Firebase isn't ready yet (module still loading), retry shortly so online mode still starts.
+    if (!rtdb || !dbRef || !get("dbOnValue") || !get("dbOnChildAdded") || !get("dbOnChildRemoved")) {
+      if (!pendingStart) {
+        pendingStart = true;
+        setTimeout(() => {
+          pendingStart = false;
+          startMultiplayerLayer();
+        }, 200);
+      }
+      return;
+    }
     localPlayerId = crypto.randomUUID();
-    playersRef = dbRef(rtdb, "players");
-    bulletsRef = dbRef(rtdb, "bullets");
+    playersRef = dbRef(rtdb, `rooms/${ROOM_ID}/players`);
+    bulletsRef = dbRef(rtdb, `rooms/${ROOM_ID}/bullets`);
     writePlayerState();
 
     get("dbOnValue")(playersRef, (snap) => {
@@ -71,7 +83,7 @@
     const dbRef = get("dbRef");
     const dbRemove = get("dbRemove");
     if (localPlayerId && playersRef) {
-      dbRemove(dbRef(rtdb, `players/${localPlayerId}`)).catch(() => {});
+      dbRemove(dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`)).catch(() => {});
     }
     localPlayerId = null;
     playersRef = null;
@@ -98,7 +110,7 @@
     const dbUpdate = get("dbUpdate");
     if (!playersRef || !localPlayerId) return;
     const p = player;
-    dbUpdate(dbRef(rtdb, `players/${localPlayerId}`), {
+    dbUpdate(dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`), {
       name: window.currentPlayerName || playerName || "Player",
       x: p.x,
       y: p.y,
@@ -117,7 +129,7 @@
     const id = crypto.randomUUID();
     const vx = Math.cos(bullet.angle || 0) * (bullet.speed || 5);
     const vy = Math.sin(bullet.angle || 0) * (bullet.speed || 5);
-    dbSet(dbRef(rtdb, `bullets/${id}`), {
+    dbSet(dbRef(rtdb, `rooms/${ROOM_ID}/bullets/${id}`), {
       ownerId: localPlayerId,
       x: bullet.x,
       y: bullet.y,
