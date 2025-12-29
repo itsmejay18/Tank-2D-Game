@@ -37,6 +37,8 @@
       }
       return;
     }
+    console.info("[MP] Starting multiplayer layer");
+    console.info("[MP] Using RTDB URL:", (get("rtdb") || {})._repo?.repoInfo_?.toString?.() || "(unknown)");
     localPlayerId = crypto.randomUUID();
     playersRef = dbRef(rtdb, `rooms/${ROOM_ID}/players`);
     bulletsRef = dbRef(rtdb, `rooms/${ROOM_ID}/bullets`);
@@ -49,6 +51,7 @@
         if (id === localPlayerId) return;
         remotePlayers[id] = data[id];
       });
+      console.info("[MP] Players snapshot:", Object.keys(remotePlayers));
     });
 
     get("dbOnChildAdded")(bulletsRef, (snap) => {
