@@ -581,28 +581,26 @@ function applyDesktopMouseAim() {
 // Virtual joystick helpers (mobile only)
 function handleJoystickStart(e) {
   if (!isMobileMode() || !gameRunning) return;
-  // Only react to touches/presses on the left side of the canvas
-  const rect = canvas.getBoundingClientRect();
-  const panelRect = gameWrapper.getBoundingClientRect();
-  const relX = e.clientX - rect.left;
-  if (relX > rect.width * 0.6) return;
+  if (!joystickEl) return;
+  const rect = joystickEl.getBoundingClientRect();
+  const inside =
+    e.clientX >= rect.left &&
+    e.clientX <= rect.right &&
+    e.clientY >= rect.top &&
+    e.clientY <= rect.bottom;
+  if (!inside) return;
   e.preventDefault();
   joystickState.active = true;
   joystickState.pointerId = e.pointerId;
-  joystickState.base.x = relX;
-  joystickState.base.y = e.clientY - rect.top;
-  if (joystickEl) {
-    joystickEl.style.left = `${e.clientX - panelRect.left}px`;
-    joystickEl.style.top = `${e.clientY - panelRect.top}px`;
-    joystickEl.classList.remove("hidden");
-    joystickEl.classList.add("active");
-  }
+  joystickState.base.x = rect.width / 2;
+  joystickState.base.y = rect.height / 2;
+  joystickEl.classList.add("active");
   centerJoystickKnob();
 }
 
 function handleJoystickMove(e) {
   if (!joystickState.active || e.pointerId !== joystickState.pointerId) return;
-  const rect = canvas.getBoundingClientRect();
+  const rect = joystickEl.getBoundingClientRect();
   const currentX = e.clientX - rect.left;
   const currentY = e.clientY - rect.top;
   const dx = currentX - joystickState.base.x;
@@ -632,10 +630,7 @@ function resetJoystick() {
   joystickState.vector = { x: 0, y: 0 };
   joystickState.distance = 0;
   centerJoystickKnob();
-  if (joystickEl) {
-    joystickEl.classList.remove("active");
-    joystickEl.classList.add("hidden");
-  }
+  if (joystickEl) joystickEl.classList.remove("active");
 }
 
 function centerJoystickKnob() {

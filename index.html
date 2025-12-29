@@ -90,13 +90,12 @@
         <span id="pierceTime" class="value">0.0s</span>
       </div>
       <canvas id="gameCanvas" width="600" height="400"></canvas>
-      <!-- Mobile virtual joystick overlay (appears on left side when touched) -->
-      <div id="joystick" class="joystick hidden">
-        <div class="joystick-base"></div>
-        <div class="joystick-knob"></div>
-      </div>
       <p class="hint">Move with W A S D (or on-screen pad), aim with mouse/touch, press Shoot. Avoid the red enemy!</p>
       <div id="mobileControls" class="mobile-controls hidden">
+        <div id="joystick" class="joystick">
+          <div class="joystick-base"></div>
+          <div class="joystick-knob"></div>
+        </div>
         <div class="action-buttons">
           <button id="shootBtn" class="shoot-btn" aria-label="Shoot">Shoot</button>
           <button id="dashBtn" class="dash-btn" aria-label="Dash">Dash</button>
