@@ -35,6 +35,8 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 // Initialize mouse position to canvas center to avoid undefined angles before first move.
 mousePos = { x: canvas.width / 2, y: canvas.height / 2 };
+// Initialize mouse position to canvas center to avoid undefined angles before first move.
+mousePos = { x: canvas.width / 2, y: canvas.height / 2 };
 const gameOverModal = document.getElementById("gameOverModal");
 const modalRestart = document.getElementById("modalRestart");
 const modalQuit = document.getElementById("modalQuit");
@@ -110,6 +112,7 @@ let wave = 1;
 let wavePauseTimer = 0;
 let playerAppearance = {};
 let audioCtx = null;
+let walls = [];
 
 // Wave-based difficulty ramp: start very slow, ease into easy, then medium, then hard
 function setWaveDifficulty(waveNumber) {
@@ -198,7 +201,7 @@ function startGame() {
   resetPlayerState();
   updateHUD();
   setCanvasTheme(mapChoice);
-  generateObstacles(mapChoice);
+  buildMazeWalls();
   bullets = [];
   pickups = [];
   enemies = [];
@@ -310,7 +313,7 @@ function update() {
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawObstacles();
+  drawWalls();
   drawPickups();
   drawParticles();
   drawBullets();
@@ -324,6 +327,74 @@ function draw() {
   };
   drawTank(player, playerAppearance, player.angle);
   enemies.forEach((e) => drawTank(e, enemyPalette, e.angle));
+}
+
+function drawWalls() {
+  ctx.save();
+  ctx.fillStyle = "rgba(92, 207, 230, 0.18)";
+  ctx.strokeStyle = "rgba(92, 207, 230, 0.45)";
+  ctx.lineWidth = 3;
+  walls.forEach((w) => {
+    ctx.fillRect(w.x, w.y, w.width, w.height);
+    ctx.strokeRect(w.x, w.y, w.width, w.height);
+  });
+  ctx.restore();
+}
+
+// Build a simple Pac-Man-style maze
+function buildMazeWalls() {
+  walls = [];
+  const line = 10; // thin neon line thickness
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const inset = 24;
+
+  // helper to push rects
+  const H = (x1, x2, y) => walls.push({ x: x1, y, width: x2 - x1, height: line });
+  const V = (x, y1, y2) => walls.push({ x, y: y1, width: line, height: y2 - y1 });
+
+  // Outer border
+  H(inset, cw - inset, inset);
+  H(inset, cw - inset, ch - inset - line);
+  V(inset, inset, ch - inset);
+  V(cw - inset - line, inset, ch - inset);
+
+  // Map-specific handcrafted barricades. Each layout is open (no prisons) but adds cover.
+  const mapLayouts = {
+    city: () => {
+      const coverLen = 140;
+      H(inset + 80, inset + 80 + coverLen, inset + 140);
+      H(cw - inset - 80 - coverLen, cw - inset - 80, inset + 180);
+      H(inset + 120, inset + 120 + coverLen, ch - inset - 200);
+      H(cw - inset - 120 - coverLen, cw - inset - 120, ch - inset - 160);
+      V(inset + 200, ch / 2 - 100, ch / 2 + 60);
+      V(cw - inset - 220, ch / 2 - 80, ch / 2 + 80);
+      H(cw / 2 - 120, cw / 2 + 120, ch / 2 - 140);
+      H(cw / 2 - 100, cw / 2 + 100, ch / 2 + 140);
+    },
+    forest: () => {
+      const cover = 100;
+      H(inset + 90, cw - inset - 90, ch / 2 - 160);
+      H(inset + 140, cw / 2 - 80, ch / 2 - 60);
+      H(cw / 2 + 80, cw - inset - 140, ch / 2 - 60);
+      V(inset + 160, inset + 120, ch - inset - 180);
+      V(cw - inset - 170, inset + 140, ch - inset - 200);
+      H(inset + 120, inset + 120 + cover, ch / 2 + 120);
+      H(cw - inset - 120 - cover, cw - inset - 120, ch / 2 + 180);
+    },
+    desert: () => {
+      const cover = 180;
+      H(inset + 60, inset + 60 + cover, inset + 140);
+      H(cw - inset - 60 - cover, cw - inset - 60, inset + 200);
+      H(inset + 140, cw - inset - 140, ch / 2);
+      V(cw / 2 - 220, inset + 180, ch - inset - 180);
+      V(cw / 2 + 200, inset + 140, ch - inset - 200);
+      H(cw / 2 - 160, cw / 2 + 160, ch - inset - 180);
+    },
+  };
+
+  const layoutFn = mapLayouts[currentMap] || mapLayouts.city;
+  layoutFn();
 }
 
 // HUD updates
@@ -352,41 +423,6 @@ function updatePowerStatus() {
   pierceTime.textContent = `${pierceSeconds.toFixed(1)}s`;
 }
 
-// Obstacles
-function generateObstacles(map) {
-  const style = mapObstacleStyles[map] || mapObstacleStyles.city;
-  obstacles = [];
-  const count = style.count;
-  const [minSize, maxSize] = style.sizeRange;
-  let attempts = 0;
-  while (obstacles.length < count && attempts < 200) {
-    const width = randomRange(minSize, maxSize);
-    const height = randomRange(minSize, maxSize);
-    const x = randomRange(20, canvas.width - width - 20);
-    const y = randomRange(20, canvas.height - height - 20);
-    const obs = {
-      x,
-      y,
-      width,
-      height,
-      destructible: Math.random() < style.destructibleChance,
-      hp: 0,
-      maxHp: 0,
-    };
-    if (obs.destructible) {
-      const [minHp, maxHp] = style.hpRange;
-      obs.hp = randomRange(minHp, maxHp);
-      obs.maxHp = obs.hp;
-    }
-    const overlapsStart = rectanglesOverlap({ x, y, width, height }, { x: player.x, y: player.y, width: 80, height: 80 });
-    const overlapsExisting = obstacles.some((o) => rectanglesOverlap(obs, o));
-    if (!overlapsStart && !overlapsExisting) {
-      obstacles.push(obs);
-    }
-    attempts += 1;
-  }
-}
-
 function placeEnemySafely(enemy) {
   const safeDistance = 140;
   let attempts = 0;
@@ -395,7 +431,7 @@ function placeEnemySafely(enemy) {
     enemy.y = Math.random() * (canvas.height - enemy.size);
     const rect = { x: enemy.x, y: enemy.y, width: enemy.size, height: enemy.size };
     const overlapsPlayer = distance(enemy.x, enemy.y, player.x, player.y) < safeDistance;
-    const overlapsObstacle = obstacles.some((obs) => rectanglesOverlap(rect, obs));
+    const overlapsObstacle = walls.some((w) => rectanglesOverlap(rect, w));
     const overlapsEnemy = enemies.some((e) =>
       rectanglesOverlap(rect, { x: e.x, y: e.y, width: e.size, height: e.size })
     );

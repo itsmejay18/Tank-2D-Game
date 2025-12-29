@@ -12,7 +12,7 @@ function createBullet(x, y, angle, speed, owner, options = {}) {
     piercing: !!options.piercing,
     color: options.color || null,
     bounces: 0,
-    maxBounces: options.maxBounces ?? (options.piercing ? 4 : 0),
+    maxBounces: options.maxBounces !== undefined ? options.maxBounces : (options.piercing ? 4 : 0),
     life: options.life || 600, // simple lifetime cap to avoid infinite projectiles
   };
 }
@@ -48,20 +48,8 @@ function updateBullets() {
       if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) return false;
     }
 
-    // Obstacle collisions
-    const hitObstacle = obstacles.find((obs) =>
-      rectanglesOverlap({ x: bullet.x - bullet.size / 2, y: bullet.y - bullet.size / 2, width: bullet.size, height: bullet.size }, obs)
-    );
-    if (hitObstacle) {
-      if (hitObstacle.destructible) {
-        hitObstacle.hp -= OBSTACLE_DAMAGE;
-        if (hitObstacle.hp <= 0) {
-          obstacles = obstacles.filter((o) => o !== hitObstacle);
-          emitParticles(hitObstacle.x + hitObstacle.width / 2, hitObstacle.y + hitObstacle.height / 2, 16, "#fbbf24");
-        }
-      }
-      return bullet.piercing; // piercing keeps going
-    }
+    // Wall collisions: remove bullet on hit
+    if (bulletHitsWall(bullet)) return false;
 
     if (bullet.owner === "enemy") {
       const hit = isPointInsideRect(bullet.x, bullet.y, player);
@@ -114,7 +102,7 @@ function spawnPickup() {
     const x = Math.random() * (canvas.width - size);
     const y = Math.random() * (canvas.height - size);
     const rect = { x, y, width: size, height: size };
-    const obstacleHit = obstacles.some((obs) => rectanglesOverlap(rect, obs));
+    const obstacleHit = walls.some((obs) => rectanglesOverlap(rect, obs));
     if (!obstacleHit && isFarFromPlayerAndEnemies(x, y, safeDistance)) {
       pickups.push({ x, y, size, type });
       break;
@@ -165,19 +153,18 @@ function emitParticles(x, y, count, color) {
 }
 
 function moveTankWithObstacles(obj, dx, dy, bounce) {
-  const newX = obj.x + dx;
-  const newY = obj.y + dy;
-  const nextRect = { x: newX, y: newY, width: obj.size, height: obj.size };
-  const collision = obstacles.find((obs) => rectanglesOverlap(nextRect, obs));
-  if (collision) {
-    if (bounce && obj.dx !== undefined && obj.dy !== undefined) {
-      obj.dx *= -1;
-      obj.dy *= -1;
-    }
-    return;
-  }
-  obj.x = clamp(newX, 0, canvas.width - obj.size);
-  obj.y = clamp(newY, 0, canvas.height - obj.size);
+  // axis-separated move to avoid tunneling through walls
+  // move X
+  const nextRectX = { x: obj.x + dx, y: obj.y, width: obj.size, height: obj.size };
+  const hitX = walls.find((w) => rectanglesOverlap(nextRectX, w));
+  if (!hitX) obj.x = clamp(obj.x + dx, 0, canvas.width - obj.size);
+  else if (bounce && obj.dx !== undefined) obj.dx *= -1;
+
+  // move Y
+  const nextRectY = { x: obj.x, y: obj.y + dy, width: obj.size, height: obj.size };
+  const hitY = walls.find((w) => rectanglesOverlap(nextRectY, w));
+  if (!hitY) obj.y = clamp(obj.y + dy, 0, canvas.height - obj.size);
+  else if (bounce && obj.dy !== undefined) obj.dy *= -1;
 }
 
 function checkTankCollision() {
@@ -197,12 +184,8 @@ function isFarFromPlayerAndEnemies(x, y, minDistance) {
   return enemies.every((e) => Math.hypot(x - getCenter(e).x, y - getCenter(e).y) > minDistance);
 }
 
-function getObstacleAtPoint(px, py) {
-  for (let i = 0; i < obstacles.length; i += 1) {
-    const obs = obstacles[i];
-    if (px >= obs.x && px <= obs.x + obs.width && py >= obs.y && py <= obs.y + obs.height) {
-      return { obs, index: i };
-    }
-  }
-  return null;
+// Helper: bullet vs walls
+function bulletHitsWall(bullet) {
+  const rect = { x: bullet.x - bullet.size / 2, y: bullet.y - bullet.size / 2, width: bullet.size, height: bullet.size };
+  return walls.some((w) => rectanglesOverlap(rect, w));
 }
