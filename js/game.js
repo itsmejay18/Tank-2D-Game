@@ -9,7 +9,7 @@ const customizeBtn = document.getElementById("customizeBtn");
 const customizeBack = document.getElementById("customizeBack");
 const playerNameInput = document.getElementById("playerName");
 const playerNameField = document.getElementById("playerNameInput");
-const mapSelect = document.getElementById("map");
+const mapSelect = document.getElementById("map"); // may be absent now; default to city
 const playerDisplay = document.getElementById("playerDisplay");
 const mapDisplay = document.getElementById("mapDisplay");
 const scoreDisplay = document.getElementById("scoreDisplay");
@@ -177,7 +177,7 @@ function startGame() {
   window.currentPlayerName = playerName;
   try { localStorage.setItem("playerName", playerName); } catch (e) { /* ignore storage errors */ }
 
-  const mapChoice = mapSelect.value;
+  const mapChoice = mapSelect ? mapSelect.value : "city";
   currentMap = mapChoice;
   setWaveDifficulty(1);
   playerAppearance = {
@@ -190,7 +190,7 @@ function startGame() {
   };
 
   playerDisplay.textContent = playerName;
-  mapDisplay.textContent = mapSelect.options[mapSelect.selectedIndex].text;
+  if (mapDisplay) mapDisplay.textContent = mapSelect ? mapSelect.options[mapSelect.selectedIndex].text : "City (dark)";
   score = 0;
   wave = 1;
   wavePauseTimer = 0;
