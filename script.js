@@ -7,11 +7,11 @@ const landingScreen = document.getElementById("landing");
 const gameWrapper = document.getElementById("gameWrapper");
 const startBtn = document.getElementById("startBtn");
 const playerNameInput = document.getElementById("playerName");
-const difficultySelect = document.getElementById("difficulty");
 const mapSelect = document.getElementById("map");
 const playerDisplay = document.getElementById("playerDisplay");
 const mapDisplay = document.getElementById("mapDisplay");
 const scoreDisplay = document.getElementById("scoreDisplay");
+const waveDisplay = document.getElementById("waveDisplay");
 const livesDisplay = document.getElementById("livesDisplay");
 const healthFill = document.getElementById("healthFill");
 const statusMessage = document.getElementById("statusMessage");
@@ -49,6 +49,7 @@ const difficultySettings = {
   medium: { enemySpeed: 2.4, enemyBulletSpeed: 3.4, enemyFireDelay: 60 },
   hard: { enemySpeed: 3.2, enemyBulletSpeed: 4.2, enemyFireDelay: 45 },
 };
+const verySlow = { enemySpeed: 1.0, enemyBulletSpeed: 2.0, enemyFireDelay: 100 };
 
 // Enemy templates
 const enemyTypes = {
@@ -109,6 +110,42 @@ let currentMap = "city";
 let wave = 1;
 let wavePauseTimer = 0;
 
+// Simple linear interpolation helper for scaling difficulty
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+// Wave-based difficulty ramp: start very slow, ease into easy, then medium, then hard
+function setWaveDifficulty(waveNumber) {
+  // Waves 1-2: verySlow -> easy
+  if (waveNumber <= 2) {
+    const t = Math.min(1, (waveNumber - 1) / 1);
+    settings = {
+      enemySpeed: lerp(verySlow.enemySpeed, difficultySettings.easy.enemySpeed, t),
+      enemyBulletSpeed: lerp(verySlow.enemyBulletSpeed, difficultySettings.easy.enemyBulletSpeed, t),
+      enemyFireDelay: lerp(verySlow.enemyFireDelay, difficultySettings.easy.enemyFireDelay, t),
+    };
+    return;
+  }
+  // Waves 3-5: easy -> medium
+  if (waveNumber <= 5) {
+    const t = Math.min(1, (waveNumber - 2) / 3);
+    settings = {
+      enemySpeed: lerp(difficultySettings.easy.enemySpeed, difficultySettings.medium.enemySpeed, t),
+      enemyBulletSpeed: lerp(difficultySettings.easy.enemyBulletSpeed, difficultySettings.medium.enemyBulletSpeed, t),
+      enemyFireDelay: lerp(difficultySettings.easy.enemyFireDelay, difficultySettings.medium.enemyFireDelay, t),
+    };
+    return;
+  }
+  // Wave 6+: medium -> hard (capped)
+  const t = Math.min(1, (waveNumber - 5) / 4);
+  settings = {
+    enemySpeed: lerp(difficultySettings.medium.enemySpeed, difficultySettings.hard.enemySpeed, t),
+    enemyBulletSpeed: lerp(difficultySettings.medium.enemyBulletSpeed, difficultySettings.hard.enemyBulletSpeed, t),
+    enemyFireDelay: lerp(difficultySettings.medium.enemyFireDelay, difficultySettings.hard.enemyFireDelay, t),
+  };
+}
+
 // Events
 startBtn.addEventListener("click", startGame);
 document.addEventListener("keydown", handleKeyDown);
@@ -130,11 +167,10 @@ function startGame() {
   statusMessage.classList.add("hidden");
   statusMessage.textContent = "";
 
-  playerName = playerNameInput.value.trim() || "Player";
-  const difficulty = difficultySelect.value;
+  playerName = (playerNameInput ? playerNameInput.value.trim() : "") || "Player";
   const mapChoice = mapSelect.value;
   currentMap = mapChoice;
-  settings = difficultySettings[difficulty] || difficultySettings.medium;
+  setWaveDifficulty(1);
 
   playerDisplay.textContent = playerName;
   mapDisplay.textContent = mapSelect.options[mapSelect.selectedIndex].text;
@@ -160,6 +196,9 @@ function startGame() {
 
 // Restart from the game-over modal using the current selections
 function restartGame() {
+  if (animationId !== null) cancelAnimationFrame(animationId);
+  animationId = null;
+  gameRunning = false;
   hideGameOverModal();
   startGame();
 }
@@ -437,6 +476,7 @@ function updateHUD() {
   healthFill.style.width = `${Math.max(0, player.health) / player.maxHealth * 100}%`;
   livesDisplay.textContent = player.lives;
   scoreDisplay.textContent = score;
+  if (waveDisplay) waveDisplay.textContent = wave;
   updatePowerStatus();
 }
 
@@ -761,9 +801,11 @@ function isFarFromPlayerAndEnemies(x, y, minDistance) {
 function startWave(waveNumber) {
   wave = waveNumber;
   wavePauseTimer = 0;
+  setWaveDifficulty(waveNumber);
   bullets = bullets.filter((b) => b.owner === "player");
   enemies = [];
   spawnEnemiesForWave(wave);
+  updateHUD();
 }
 
 function spawnEnemiesForWave(waveNumber) {

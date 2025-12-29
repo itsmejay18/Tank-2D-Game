@@ -43,6 +43,27 @@ body {
   letter-spacing: 1px;
 }
 
+#titleSection {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+#titleSection h1 {
+  font-size: 2.2rem;
+  letter-spacing: 1px;
+  color: #aafcff;
+  text-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
+}
+
+#titleSection .tagline {
+  max-width: 750px;
+  margin: 10px auto 0 auto;
+  font-size: 0.95rem;
+  line-height: 1.5rem;
+  opacity: 0.9;
+  color: #d0f8ff;
+}
+
 .tagline {
   color: #9fb3d1;
   margin-bottom: 4px;
@@ -92,6 +113,20 @@ body {
 .tank-desc {
   color: #9fb3d1;
   font-size: 13px;
+}
+
+.brand-mark {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0 4px;
+}
+
+.brand-logo {
+  width: 140px;
+  height: auto;
+  filter: drop-shadow(0 8px 20px rgba(0, 255, 200, 0.35));
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .mobile-opt .toggle-row {
