@@ -129,6 +129,41 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.appearance .color-row,
+.appearance .shape-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.color-field,
+.shape-field {
+  background: #12192c;
+  border: 1px solid #2d3a5c;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
+}
+
+.color-field span,
+.shape-field span {
+  color: #c7d7f4;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.color-field input[type="color"] {
+  width: 100%;
+  height: 40px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
 .mobile-opt .toggle-row {
   display: flex;
   align-items: center;
@@ -387,6 +422,11 @@ select:focus {
   border-radius: 10px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.button-row {
+  display: flex;
+  justify-content: center;
 }
 
 @media (max-width: 720px) {

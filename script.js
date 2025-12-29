@@ -4,8 +4,11 @@
 
 // DOM references
 const landingScreen = document.getElementById("landing");
+const customizePanel = document.getElementById("customizePanel");
 const gameWrapper = document.getElementById("gameWrapper");
 const startBtn = document.getElementById("startBtn");
+const customizeBtn = document.getElementById("customizeBtn");
+const customizeBack = document.getElementById("customizeBack");
 const playerNameInput = document.getElementById("playerName");
 const mapSelect = document.getElementById("map");
 const playerDisplay = document.getElementById("playerDisplay");
@@ -23,6 +26,12 @@ const shootBtn = document.getElementById("shootBtn");
 const dashBtn = document.getElementById("dashBtn");
 const joystickEl = document.getElementById("joystick");
 const joystickKnob = joystickEl ? joystickEl.querySelector(".joystick-knob") : null;
+const bodyColorInput = document.getElementById("bodyColor");
+const barrelColorInput = document.getElementById("barrelColor");
+const wheelColorInput = document.getElementById("wheelColor");
+const outlineColorInput = document.getElementById("outlineColor");
+const turretShapeSelect = document.getElementById("turretShape");
+const barrelTipSelect = document.getElementById("barrelTip");
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const gameOverModal = document.getElementById("gameOverModal");
@@ -109,6 +118,7 @@ let pickupTimer = 0;
 let currentMap = "city";
 let wave = 1;
 let wavePauseTimer = 0;
+let playerAppearance = {};
 
 // Simple linear interpolation helper for scaling difficulty
 function lerp(a, b, t) {
@@ -148,6 +158,8 @@ function setWaveDifficulty(waveNumber) {
 
 // Events
 startBtn.addEventListener("click", startGame);
+if (customizeBtn) customizeBtn.addEventListener("click", showCustomize);
+if (customizeBack) customizeBack.addEventListener("click", hideCustomize);
 document.addEventListener("keydown", handleKeyDown);
 document.addEventListener("keyup", handleKeyUp);
 canvas.addEventListener("mousemove", updateMousePosition);
@@ -167,10 +179,23 @@ function startGame() {
   statusMessage.classList.add("hidden");
   statusMessage.textContent = "";
 
+  // Ensure we're on the landing screen before starting
+  if (customizePanel) customizePanel.classList.add("hidden");
+  landingScreen.classList.add("hidden");
+  gameWrapper.classList.remove("hidden");
+
   playerName = (playerNameInput ? playerNameInput.value.trim() : "") || "Player";
   const mapChoice = mapSelect.value;
   currentMap = mapChoice;
   setWaveDifficulty(1);
+  playerAppearance = {
+    body: (bodyColorInput && bodyColorInput.value) || "#3adb76",
+    barrel: (barrelColorInput && barrelColorInput.value) || "#a8ffd7",
+    wheels: (wheelColorInput && wheelColorInput.value) || "#1f5138",
+    outline: (outlineColorInput && outlineColorInput.value) || "#88ffd1",
+    turretShape: (turretShapeSelect && turretShapeSelect.value) || "rounded",
+    barrelTip: (barrelTipSelect && barrelTipSelect.value) || "standard",
+  };
 
   playerDisplay.textContent = playerName;
   mapDisplay.textContent = mapSelect.options[mapSelect.selectedIndex].text;
@@ -192,6 +217,19 @@ function startGame() {
   gameWrapper.classList.remove("hidden");
   gameRunning = true;
   animationId = requestAnimationFrame(update);
+}
+
+function showCustomize() {
+  if (animationId !== null) return; // prevent opening mid-run
+  landingScreen.classList.add("hidden");
+  gameWrapper.classList.add("hidden");
+  if (customizePanel) customizePanel.classList.remove("hidden");
+}
+
+function hideCustomize() {
+  if (customizePanel) customizePanel.classList.add("hidden");
+  landingScreen.classList.remove("hidden");
+  gameWrapper.classList.add("hidden");
 }
 
 // Restart from the game-over modal using the current selections
@@ -503,6 +541,7 @@ function returnToMenu() {
   animationId = null;
   gameRunning = false;
   hideGameOverModal();
+  if (customizePanel) customizePanel.classList.add("hidden");
   resetJoystick();
   landingScreen.classList.remove("hidden");
   gameWrapper.classList.add("hidden");
@@ -893,8 +932,16 @@ function draw() {
   drawPickups();
   drawParticles();
   drawBullets();
-  drawTank(player, "#3adb76", "#a8ffd7", player.angle);
-  enemies.forEach((e) => drawTank(e, "#e74c3c", "#f8b4a6", e.angle));
+  const enemyPalette = {
+    body: "#e74c3c",
+    barrel: "#f8b4a6",
+    wheels: "#5c1c17",
+    outline: "#f3a8a0",
+    turretShape: "rounded",
+    barrelTip: "standard",
+  };
+  drawTank(player, playerAppearance, player.angle);
+  enemies.forEach((e) => drawTank(e, enemyPalette, e.angle));
 }
 
 function drawParticles() {
@@ -978,27 +1025,95 @@ function drawObstacles() {
   });
 }
 
-function drawTank(tank, bodyColor, barrelColor, angle) {
+function drawTank(tank, palette, angle) {
   ctx.save();
   const c = getCenter(tank);
   ctx.translate(c.x, c.y);
-  ctx.rotate(angle);
+  ctx.rotate(angle || 0);
+
+  const size = tank.size;
+  const bodyW = size * 1.1;
+  const bodyH = size * 0.72;
+  const wheelR = size * 0.2;
+  const wheelOffsetY = bodyH * 0.45;
+
+  const bodyColor = palette?.body || "#3adb76";
+  const barrelColor = palette?.barrel || "#a8ffd7";
+  const wheelsColor = palette?.wheels || "#1f5138";
+  const outlineColor = palette?.outline || "#88ffd1";
+  const turretShape = palette?.turretShape || "rounded";
+  const barrelTip = palette?.barrelTip || "standard";
+
+  // Wheels/tracks
+  ctx.fillStyle = wheelsColor;
+  ctx.beginPath();
+  ctx.arc(-bodyW * 0.35, wheelOffsetY, wheelR, 0, Math.PI * 2);
+  ctx.arc(bodyW * 0.35, wheelOffsetY, wheelR, 0, Math.PI * 2);
+  ctx.arc(-bodyW * 0.35, -wheelOffsetY, wheelR, 0, Math.PI * 2);
+  ctx.arc(bodyW * 0.35, -wheelOffsetY, wheelR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Body
+  const bodyX = -bodyW / 2;
+  const bodyY = -bodyH / 2;
+  const radius = Math.min(bodyW, bodyH) * 0.22;
   ctx.fillStyle = bodyColor;
-  ctx.fillRect(-tank.size / 2, -tank.size / 2, tank.size, tank.size);
+  drawRoundedRect(bodyX, bodyY, bodyW, bodyH, radius, true, false);
+
+  // Outline
+  ctx.strokeStyle = outlineColor;
+  ctx.lineWidth = 2;
+  drawRoundedRect(bodyX, bodyY, bodyW, bodyH, radius, false, true);
+
+  // Turret
+  const turretW = bodyW * 0.38;
+  const turretH = bodyH * 0.42;
+  const turretRadius = turretShape === "rounded" ? turretH * 0.4 : 0;
+  ctx.fillStyle = bodyColor;
+  drawRoundedRect(-turretW / 2, -turretH / 2, turretW, turretH, turretRadius, true, false);
+
+  // Barrel
+  const barrelLength = size * 0.9;
+  const barrelWidth = size * 0.18;
   ctx.fillStyle = barrelColor;
-  const barrelLength = tank.size * 0.8;
-  const barrelWidth = tank.size * 0.2;
-  ctx.fillRect(0, -barrelWidth / 2, barrelLength, barrelWidth);
-  // dash cooldown ring
+  ctx.fillRect(turretW / 2, -barrelWidth / 2, barrelLength, barrelWidth);
+
+  // Barrel tip variations
+  if (barrelTip === "wide") {
+    ctx.fillRect(turretW / 2 + barrelLength - barrelWidth * 0.2, -barrelWidth, barrelWidth * 0.8, barrelWidth * 2);
+  } else if (barrelTip === "spike") {
+    ctx.beginPath();
+    ctx.moveTo(turretW / 2 + barrelLength, -barrelWidth / 2);
+    ctx.lineTo(turretW / 2 + barrelLength + barrelWidth * 0.8, 0);
+    ctx.lineTo(turretW / 2 + barrelLength, barrelWidth / 2);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Dash cooldown ring for player
   if (tank === player) {
     ctx.strokeStyle = player.dashCooldown <= 0 ? "#4ade80" : "#93c5fd";
     ctx.lineWidth = 2;
     ctx.beginPath();
     const progress = player.dashCooldown <= 0 ? 1 : 1 - Math.max(0, player.dashCooldown) / DASH_COOLDOWN;
-    ctx.arc(0, 0, tank.size + 6, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+    ctx.arc(0, 0, size + 8, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
     ctx.stroke();
   }
+
   ctx.restore();
+}
+
+function drawRoundedRect(x, y, w, h, r, fill, stroke) {
+  if (ctx.roundRect) {
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, r);
+    if (fill) ctx.fill();
+    if (stroke) ctx.stroke();
+    return;
+  }
+  // fallback square
+  if (fill) ctx.fillRect(x, y, w, h);
+  if (stroke) ctx.strokeRect(x, y, w, h);
 }
 
 // Utility

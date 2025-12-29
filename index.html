@@ -35,7 +35,58 @@
           <span class="toggle-help">Enable on phones/tablets (auto-detected)</span>
         </div>
       </div>
+      <button id="customizeBtn" class="secondary">Customize Tank</button>
       <button id="startBtn" class="primary">Start Game</button>
+    </section>
+
+    <!-- Tank customization screen -->
+    <section id="customizePanel" class="panel hidden">
+      <h2 class="title">Customize Your Tank</h2>
+      <p class="tagline">Choose your colors and shapes, then return to start.</p>
+      <div class="form-group appearance">
+        <label>Tank Colors</label>
+        <div class="color-row">
+          <div class="color-field">
+            <span>Body</span>
+            <input type="color" id="bodyColor" value="#3adb76" aria-label="Body color">
+          </div>
+          <div class="color-field">
+            <span>Barrel</span>
+            <input type="color" id="barrelColor" value="#a8ffd7" aria-label="Barrel color">
+          </div>
+          <div class="color-field">
+            <span>Wheels</span>
+            <input type="color" id="wheelColor" value="#1f5138" aria-label="Wheel color">
+          </div>
+          <div class="color-field">
+            <span>Outline</span>
+            <input type="color" id="outlineColor" value="#88ffd1" aria-label="Outline color">
+          </div>
+        </div>
+      </div>
+      <div class="form-group appearance">
+        <label>Tank Shapes</label>
+        <div class="shape-row">
+          <div class="shape-field">
+            <span>Turret</span>
+            <select id="turretShape" aria-label="Turret shape">
+              <option value="rounded" selected>Rounded</option>
+              <option value="square">Square</option>
+            </select>
+          </div>
+          <div class="shape-field">
+            <span>Barrel Tip</span>
+            <select id="barrelTip" aria-label="Barrel tip shape">
+              <option value="standard" selected>Standard</option>
+              <option value="wide">Wide</option>
+              <option value="spike">Spike</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="button-row">
+        <button id="customizeBack" class="primary">Save & Return</button>
+      </div>
     </section>
 
     <section id="gameWrapper" class="panel hidden">
