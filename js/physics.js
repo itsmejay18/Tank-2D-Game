@@ -5,6 +5,8 @@ function createBullet(x, y, angle, speed, owner, options = {}) {
   return {
     x,
     y,
+    angle,
+    speed,
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed,
     size: options.size || 6,

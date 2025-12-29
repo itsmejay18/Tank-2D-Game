@@ -15,6 +15,7 @@ const mapDisplay = document.getElementById("mapDisplay");
 const scoreDisplay = document.getElementById("scoreDisplay");
 const waveDisplay = document.getElementById("waveDisplay");
 const livesDisplay = document.getElementById("livesDisplay");
+const modeDisplay = document.getElementById("modeDisplay");
 const healthFill = document.getElementById("healthFill");
 const statusMessage = document.getElementById("statusMessage");
 const powerStatus = document.getElementById("powerStatus");
@@ -41,6 +42,7 @@ const gameOverModal = document.getElementById("gameOverModal");
 const modalRestart = document.getElementById("modalRestart");
 const modalQuit = document.getElementById("modalQuit");
 const shareBtn = document.getElementById("shareBtn");
+const modeRadios = Array.from(document.querySelectorAll('input[name="gameMode"]'));
 
 // Map visuals
 const mapColors = {
@@ -109,6 +111,8 @@ let wavePauseTimer = 0;
 let playerAppearance = {};
 let audioCtx = null;
 let walls = [];
+let gameMode = "solo";
+let cleanupTimer = 0;
 
 // Wave-based difficulty ramp: start very slow, ease into easy, then medium, then hard
 function setWaveDifficulty(waveNumber) {
@@ -160,6 +164,11 @@ function setCanvasTheme(theme) {
 
 // Start the game
 function startGame() {
+  // Determine mode from radios
+  const selectedMode = modeRadios.find((r) => r.checked)?.value || "solo";
+  gameMode = selectedMode;
+  window.gameMode = gameMode;
+
   if (animationId !== null) return;
 
   statusMessage.classList.add("hidden");
@@ -190,7 +199,10 @@ function startGame() {
   };
 
   playerDisplay.textContent = playerName;
-  if (mapDisplay) mapDisplay.textContent = mapSelect ? mapSelect.options[mapSelect.selectedIndex].text : "City (dark)";
+  if (mapDisplay) {
+    const mapLabel = mapSelect && mapSelect.options ? mapSelect.options[mapSelect.selectedIndex].text : "City (dark)";
+    mapDisplay.textContent = mapLabel;
+  }
   score = 0;
   wave = 1;
   wavePauseTimer = 0;
@@ -204,6 +216,11 @@ function startGame() {
   particles = [];
   resetJoystick();
   startWave(wave);
+
+  if (gameMode === "multiplayer" && typeof startMultiplayerLayer === "function") {
+    startMultiplayerLayer();
+  }
+
   gameRunning = true;
   animationId = requestAnimationFrame(update);
 }
@@ -223,6 +240,9 @@ function returnToMenu() {
   animationId = null;
   gameRunning = false;
   hideGameOverModal();
+  if (gameMode === "multiplayer" && typeof teardownMultiplayer === "function") {
+    teardownMultiplayer();
+  }
   if (customizePanel) customizePanel.classList.add("hidden");
   resetJoystick();
   landingScreen.classList.remove("hidden");
@@ -238,6 +258,9 @@ function gameOver() {
   if (animationId !== null) cancelAnimationFrame(animationId);
   animationId = null;
   gameRunning = false;
+  if (gameMode === "multiplayer" && typeof teardownMultiplayer === "function") {
+    teardownMultiplayer();
+  }
   if (typeof saveScore === "function") {
     try { saveScore(window.currentPlayerName || playerName, score); } catch (e) { console.warn("saveScore failed:", e); }
   }
@@ -302,6 +325,10 @@ function update() {
   updatePickups();
   updateParticles();
   handleWaveProgression();
+  if (gameMode === "multiplayer" && typeof cleanupMultiplayer === "function") {
+    cleanupTimer = (cleanupTimer + 1) % 120;
+    if (cleanupTimer === 0) cleanupMultiplayer();
+  }
   draw();
   checkTankCollision();
   animationId = requestAnimationFrame(update);
@@ -322,8 +349,27 @@ function draw() {
     barrelTip: "standard",
   };
   drawTank(player, playerAppearance, player.angle);
+  drawNameTag(player, playerName, "#e8ecf5");
+  if (typeof drawRemotePlayers === "function") drawRemotePlayers();
   enemies.forEach((e) => drawTank(e, enemyPalette, e.angle));
 }
+
+// Simple label above a tank for identification (local + remote)
+function drawNameTag(entity, text, color = "#dce8ff") {
+  if (!text || !ctx) return;
+  const c = getCenter(entity);
+  ctx.save();
+  ctx.font = '14px "Poppins", system-ui, sans-serif';
+  ctx.fillStyle = color;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+  ctx.shadowColor = "rgba(0,0,0,0.5)";
+  ctx.shadowBlur = 4;
+  ctx.fillText(text, c.x, c.y - entity.size / 2 - 6);
+  ctx.restore();
+}
+// expose for multiplayer layer
+window.drawNameTag = drawNameTag;
 
 function drawWalls() {
   ctx.save();
@@ -380,6 +426,7 @@ function updateHUD() {
   livesDisplay.textContent = player.lives;
   scoreDisplay.textContent = score;
   if (waveDisplay) waveDisplay.textContent = wave;
+  if (modeDisplay) modeDisplay.textContent = gameMode === "multiplayer" ? "Online" : "Solo";
   updatePowerStatus();
 }
 

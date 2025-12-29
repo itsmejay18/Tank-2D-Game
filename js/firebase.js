@@ -1,6 +1,16 @@
 // Firebase initialization (modular v12, no bundler)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+import {
+  getDatabase,
+  ref,
+  set,
+  update,
+  remove,
+  onValue,
+  onChildAdded,
+  onChildRemoved,
+} from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
 
 // Provided project credentials (no analytics)
 const firebaseConfig = {
@@ -15,13 +25,32 @@ const firebaseConfig = {
 
 let app = null;
 let db = null;
+let rtdb = null;
 try {
   app = initializeApp(firebaseConfig);
   db = getFirestore(app);
+  rtdb = getDatabase(app);
 } catch (err) {
   console.warn("Firebase initialization error:", err);
 }
 
-export { app, db };
+export { app, db, rtdb };
+// Re-export RTDB helpers so other modules can import from one place.
+export const dbRef = ref;
+export const dbSet = set;
+export const dbUpdate = update;
+export const dbRemove = remove;
+export const dbOnValue = onValue;
+export const dbOnChildAdded = onChildAdded;
+export const dbOnChildRemoved = onChildRemoved;
+
 // Also expose on window for legacy/global access
 window.db = db;
+window.rtdb = rtdb;
+window.dbRef = ref;
+window.dbSet = set;
+window.dbUpdate = update;
+window.dbRemove = remove;
+window.dbOnValue = onValue;
+window.dbOnChildAdded = onChildAdded;
+window.dbOnChildRemoved = onChildRemoved;

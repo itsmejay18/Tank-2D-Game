@@ -177,6 +177,32 @@ select:focus {
   box-shadow: 0 0 0 3px rgba(92, 207, 230, 0.25);
 }
 
+.radio-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #1f2a3d;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.08);
+}
+.radio input {
+  accent-color: #43e7c0;
+}
+.helper {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
 .primary {
   background: linear-gradient(120deg, #53d397, #4ad1ff);
   color: #061020;

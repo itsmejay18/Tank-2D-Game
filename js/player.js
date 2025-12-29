@@ -30,16 +30,23 @@ function movePlayer() {
 // Player fire (uses facing angle)
 function attemptPlayerShot() {
   if (animationId === null || player.fireCooldown > 0) return;
+  // On mobile, snap aim to current joystick direction so shots follow the stick like mouse aim on desktop.
+  if (isMobileMode() && joystickState.active && joystickState.distance > 0) {
+    player.angle = Math.atan2(joystickState.vector.y, joystickState.vector.x);
+  }
   const playerCenter = getCenter(player);
   const angle = player.angle || 0;
   const bulletSpeed = 5;
-  bullets.push(
-    createBullet(playerCenter.x, playerCenter.y, angle, bulletSpeed, "player", {
-      piercing: player.pierceTimer > 0,
-      color: player.pierceTimer > 0 ? "#60a5fa" : null,
-      maxBounces: player.pierceTimer > 0 ? 4 : 0,
-    })
-  );
+  const shot = createBullet(playerCenter.x, playerCenter.y, angle, bulletSpeed, "player", {
+    piercing: player.pierceTimer > 0,
+    color: player.pierceTimer > 0 ? "#60a5fa" : null,
+    maxBounces: player.pierceTimer > 0 ? 4 : 0,
+  });
+  bullets.push(shot);
+  // Publish to network in multiplayer mode
+  if (typeof publishNetworkBullet === "function" && (window.gameMode === "multiplayer" || typeof gameMode !== "undefined" && gameMode === "multiplayer")) {
+    publishNetworkBullet({ x: playerCenter.x, y: playerCenter.y, angle, speed: bulletSpeed });
+  }
   player.fireCooldown = player.rapidTimer > 0 ? 6 : 12;
   playTone(520, 0.05, "square");
 }

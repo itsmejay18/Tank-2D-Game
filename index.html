@@ -23,6 +23,20 @@
         <img src="image/favicon.PNG" alt="Steel Dash emblem" class="brand-logo">
       </div>
       <div class="form-group">
+        <label>Game Mode</label>
+        <div class="radio-row">
+          <label class="radio">
+            <input type="radio" name="gameMode" value="solo" checked>
+            <span>Solo</span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="gameMode" value="multiplayer">
+            <span>Online Multiplayer</span>
+          </label>
+        </div>
+        <small class="helper">Solo is the default. Online mode shares your position and shots via Firebase.</small>
+      </div>
+      <div class="form-group">
         <label for="playerNameInput">Player Name</label>
         <input id="playerNameInput" type="text" maxlength="20" placeholder="Enter your name" required>
       </div>
@@ -108,6 +122,8 @@
         <span id="waveDisplay" class="value">1</span>
         <span class="label">Lives:</span>
         <span id="livesDisplay" class="value">3</span>
+        <span class="label">Mode:</span>
+        <span id="modeDisplay" class="value">Solo</span>
       </div>
       <div class="health-row">
         <span class="label">Health:</span>
@@ -150,14 +166,15 @@
     </div>
   </div>
 
+  <script type="module" src="js/firebase.js"></script>
   <script src="js/utils.js" defer></script>
   <script src="js/controls.js" defer></script>
   <script src="js/player.js" defer></script>
   <script src="js/enemies.js" defer></script>
   <script src="js/physics.js" defer></script>
   <script src="js/game.js" defer></script>
+  <script src="js/multiplayer.js" defer></script>
   <script src="js/main.js" defer></script>
-  <script type="module" src="js/firebase.js"></script>
   <script type="module" src="js/leaderboard.js"></script>
 </body>
 </html>
