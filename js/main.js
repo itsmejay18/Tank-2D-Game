@@ -29,6 +29,7 @@ window.addEventListener("pointercancel", handleJoystickEnd);
 setupMobileControls();
 if (modalRestart) modalRestart.addEventListener("click", restartGame);
 if (modalQuit) modalQuit.addEventListener("click", returnToMenu);
+if (shareBtn) shareBtn.addEventListener("click", copyShareLink);
 
 // Load leaderboard once on startup (if Firebase configured)
 if (typeof showLeaderboard === "function") {

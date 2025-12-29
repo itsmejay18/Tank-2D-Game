@@ -38,6 +38,7 @@ mousePos = { x: canvas.width / 2, y: canvas.height / 2 };
 const gameOverModal = document.getElementById("gameOverModal");
 const modalRestart = document.getElementById("modalRestart");
 const modalQuit = document.getElementById("modalQuit");
+const shareBtn = document.getElementById("shareBtn");
 
 // Map visuals
 const mapColors = {
@@ -248,6 +249,41 @@ function gameOver() {
   } else {
     alert(`Game Over, ${playerName}! Try again.`);
   }
+}
+
+function copyShareLink() {
+  const name = (window.currentPlayerName || playerName || "Player").trim() || "Player";
+  const shareScore = score || 0;
+  const base = `${window.location.origin}${window.location.pathname}`;
+  const url = `${base}?player=${encodeURIComponent(name)}&score=${encodeURIComponent(shareScore)}`;
+  const text = `Can you beat my score of ${shareScore} in Steel Dash: Bullet Storm? ${url}`;
+  const done = () => {
+    if (statusMessage) {
+      statusMessage.textContent = "Share link copied!";
+      statusMessage.classList.remove("hidden");
+      setTimeout(() => statusMessage && statusMessage.classList.add("hidden"), 2000);
+    } else {
+      alert("Share link copied!");
+    }
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else {
+    fallbackCopy(text, done);
+  }
+}
+
+function fallbackCopy(text, cb) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { document.execCommand("copy"); } catch (e) { console.warn("Copy failed", e); }
+  document.body.removeChild(ta);
+  if (cb) cb();
 }
 
 // Main loop
