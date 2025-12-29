@@ -17,6 +17,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDGld6iY6dKbHBvoYH82-KJTswKCnQjmBk",
   authDomain: "steeldashbulletstorm.firebaseapp.com",
   projectId: "steeldashbulletstorm",
+  databaseURL: "https://steeldashbulletstorm-default-rtdb.asia-southeast1.firebasedatabase.app",
   storageBucket: "steeldashbulletstorm.appspot.com",
   messagingSenderId: "358145837498",
   appId: "1:358145837498:web:37f263dfabfa773345f583",
@@ -29,7 +30,8 @@ let rtdb = null;
 try {
   app = initializeApp(firebaseConfig);
   db = getFirestore(app);
-  rtdb = getDatabase(app);
+  // Force the correct regional RTDB endpoint to avoid region warnings
+  rtdb = getDatabase(app, firebaseConfig.databaseURL);
 } catch (err) {
   console.warn("Firebase initialization error:", err);
 }
