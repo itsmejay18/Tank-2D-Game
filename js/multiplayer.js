@@ -69,7 +69,8 @@
         };
       });
       remotePlayers = next;
-      console.info("[MP] Players snapshot:", Object.keys(remotePlayers));
+      console.info("[MP] Players snapshot keys:", Object.keys(remotePlayers));
+      console.info("[MP] Raw players snapshot:", data);
     });
 
     if (unsubBulletsAdd) unsubBulletsAdd();
@@ -140,7 +141,8 @@
     const dbUpdate = get("dbUpdate");
     if (!playersRef || !localPlayerId) return;
     const p = player;
-    dbUpdate(dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`), {
+    // Use set to ensure presence node always exists/overwrites cleanly
+    get("dbSet")(dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`), {
       name: window.currentPlayerName || playerName || "Player",
       x: p.x,
       y: p.y,
