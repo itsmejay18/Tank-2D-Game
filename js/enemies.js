@@ -9,6 +9,7 @@ function enemyShoot(enemy) {
 }
 
 function updateEnemies() {
+  if (typeof gameMode !== "undefined" && gameMode === "multiplayer") return;
   enemies.forEach((enemy) => {
     moveTankWithObstacles(enemy, enemy.dx, enemy.dy, true);
     const pC = getCenter(player);
@@ -23,6 +24,7 @@ function updateEnemies() {
 }
 
 function spawnEnemiesForWave(waveNumber) {
+  if (typeof gameMode !== "undefined" && gameMode === "multiplayer") return;
   const light = 2 + waveNumber;
   const medium = Math.max(1, Math.floor((waveNumber + 1) / 2));
   const heavy = waveNumber >= 3 ? Math.floor((waveNumber - 1) / 3) : 0;
@@ -75,6 +77,7 @@ function setRandomVelocity(obj) {
 }
 
 function handleWaveProgression() {
+  if (typeof gameMode !== "undefined" && gameMode === "multiplayer") return;
   if (enemies.length === 0) {
     if (wavePauseTimer === 0) {
       wavePauseTimer = 150;

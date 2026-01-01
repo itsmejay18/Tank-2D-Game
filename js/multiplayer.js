@@ -16,6 +16,7 @@
   let unsubPlayers = null;
   let unsubBulletsAdd = null;
   let unsubBulletsRemove = null;
+  let playersReady = false;
 
   const remotePalette = {
     body: "#4ecdc4",
@@ -48,7 +49,7 @@
     writePlayerState();
 
     if (unsubPlayers) unsubPlayers();
-    unsubPlayers = get("dbOnValue")(playersRef, (snap) => {
+    const applySnapshot = (snap) => {
       const data = snap.val() || {};
       const next = {};
       Object.keys(data).forEach((id) => {
@@ -71,7 +72,20 @@
       remotePlayers = next;
       console.info("[MP] Players snapshot keys:", Object.keys(remotePlayers));
       console.info("[MP] Raw players snapshot:", data);
-    });
+      playersReady = true;
+    };
+
+    unsubPlayers = get("dbOnValue")(
+      playersRef,
+      applySnapshot,
+      (err) => console.warn("RTDB players listener error:", err?.message || err)
+    );
+
+    // Fallback: one-time fetch to populate immediately
+    const dbGet = get("dbGet");
+    if (dbGet) {
+      dbGet(playersRef).then(applySnapshot).catch((err) => console.warn("RTDB players get failed:", err?.message || err));
+    }
 
     if (unsubBulletsAdd) unsubBulletsAdd();
     unsubBulletsAdd = get("dbOnChildAdded")(bulletsRef, (snap) => {
