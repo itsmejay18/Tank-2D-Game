@@ -66,11 +66,19 @@ function updateBullets() {
       }
     }
 
+    // Remove RTDB bullet if we're the owner and it expires this frame
+    const shouldRemoveNetwork = (reason) => {
+      if (bullet.ownerId && bullet.ownerId === window.localPlayerId && bullet.rtdbId && typeof window.removeNetworkBullet === "function") {
+        window.removeNetworkBullet(bullet.rtdbId);
+      }
+      return false;
+    };
+
     if (bullet.owner === "enemy") {
       const hit = isPointInsideRect(bullet.x, bullet.y, player);
       if (hit) {
         applyPlayerDamage(DAMAGE.enemyBullet);
-        return false;
+        return shouldRemoveNetwork("playerHit");
       }
     } else if (bullet.owner === "player") {
       // Hit enemy
@@ -83,7 +91,8 @@ function updateBullets() {
           emitParticles(victim.x + victim.size / 2, victim.y + victim.size / 2, 18, "#f97316");
           enemies = enemies.filter((e) => e !== victim);
         }
-        return bullet.piercing; // piercing continues
+        if (bullet.piercing) return true; // continue
+        return shouldRemoveNetwork("enemyHit");
       }
     }
     return true;

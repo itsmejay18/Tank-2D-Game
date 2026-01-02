@@ -51,6 +51,9 @@
     playersRef = dbRef(rtdb, `rooms/${ROOM_ID}/players`);
     bulletsRef = dbRef(rtdb, `rooms/${ROOM_ID}/bullets`);
     playerRef = dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`);
+    // Clean up old bullets on join to avoid stale storms
+    const dbRemove = get("dbRemove");
+    if (dbRemove && bulletsRef) dbRemove(bulletsRef).catch(() => {});
     writePlayerState();
 
     if (unsubPlayers) unsubPlayers();
@@ -243,6 +246,8 @@ function eliminateSelf() {
       damage: bullet.damage || 20,
       ts: Date.now(),
     }).catch((err) => console.warn("RTDB bullet publish failed:", err?.message || err));
+    // Tag local bullet with RTDB id for cleanup
+    bullet.rtdbId = id;
   }
 
   function cleanupMultiplayer() {
@@ -250,12 +255,21 @@ function eliminateSelf() {
     return;
   }
 
+  function removeNetworkBullet(bulletId) {
+    const rtdb = get("rtdb");
+    const dbRef = get("dbRef");
+    const dbRemove = get("dbRemove");
+    if (!bulletId || !rtdb || !dbRef || !dbRemove) return;
+    dbRemove(dbRef(rtdb, `rooms/${ROOM_ID}/bullets/${bulletId}`)).catch(() => {});
+  }
+
   // Expose globals so game.js/player.js can call them
-window.startMultiplayerLayer = startMultiplayerLayer;
-window.teardownMultiplayer = teardownMultiplayer;
-window.drawRemotePlayers = drawRemotePlayers;
-window.publishNetworkBullet = publishNetworkBullet;
-window.cleanupMultiplayer = cleanupMultiplayer;
-window.creditKill = creditKill;
-window.eliminateSelf = eliminateSelf;
+  window.startMultiplayerLayer = startMultiplayerLayer;
+  window.teardownMultiplayer = teardownMultiplayer;
+  window.drawRemotePlayers = drawRemotePlayers;
+  window.publishNetworkBullet = publishNetworkBullet;
+  window.cleanupMultiplayer = cleanupMultiplayer;
+  window.creditKill = creditKill;
+  window.eliminateSelf = eliminateSelf;
+  window.removeNetworkBullet = removeNetworkBullet;
 })();
