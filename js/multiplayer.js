@@ -52,9 +52,6 @@
     playersRef = dbRef(rtdb, `rooms/${ROOM_ID}/players`);
     bulletsRef = dbRef(rtdb, `rooms/${ROOM_ID}/bullets`);
     playerRef = dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`);
-    // Clean up old bullets on join to avoid stale storms
-    const dbRemove = get("dbRemove");
-    if (dbRemove && bulletsRef) dbRemove(bulletsRef).catch(() => {});
     writePlayerState();
 
     if (unsubPlayers) unsubPlayers();
@@ -115,6 +112,9 @@
       seenBullets.add(id);
       const b = snap.val();
       if (!b) return;
+      // Ignore very stale bullets (older than 5s)
+      const now = Date.now();
+      if (b.ts && now - b.ts > 5000) return;
       if (b.ownerId === localPlayerId) return; // already spawned locally
       const angle = Math.atan2(b.vy, b.vx);
       const speed = Math.hypot(b.vx, b.vy);
