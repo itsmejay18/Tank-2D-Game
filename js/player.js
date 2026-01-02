@@ -72,8 +72,12 @@ function applyPlayerDamage(amount) {
   updateHUD();
   if (player.health > 0) return;
   if (gameMode === "multiplayer") {
-    // In PvP, elimination is handled by multiplayer helpers
     if (typeof eliminateSelf === "function") eliminateSelf();
+    gameRunning = false;
+    if (statusMessage) {
+      statusMessage.textContent = "Eliminated";
+      statusMessage.classList.remove("hidden");
+    }
     return;
   }
   if (player.lives <= 0) {

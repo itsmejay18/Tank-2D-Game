@@ -65,8 +65,8 @@
         const safeName = (d.name || "").trim();
         if (!safeName) return; // skip nameless entries
         const ts = Number(d.ts || d.timestamp || 0);
-        // Cull stale entries (offline/ghost) older than 20s
-        if (ts && now - ts > 20000) {
+        // Cull stale entries (offline/ghost) older than 25s
+        if (ts && now - ts > 25000) {
           if (dbRemove) dbRemove(dbRef(rtdb, `rooms/${ROOM_ID}/players/${id}`)).catch(() => {});
           return;
         }
