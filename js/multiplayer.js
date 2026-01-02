@@ -17,6 +17,7 @@
   let unsubBulletsAdd = null;
   let unsubBulletsRemove = null;
   let playersReady = false;
+  let playerRef = null;
 
   const remotePalette = {
     body: "#4ecdc4",
@@ -46,6 +47,7 @@
     localPlayerId = crypto.randomUUID();
     playersRef = dbRef(rtdb, `rooms/${ROOM_ID}/players`);
     bulletsRef = dbRef(rtdb, `rooms/${ROOM_ID}/bullets`);
+    playerRef = dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`);
     writePlayerState();
 
     if (unsubPlayers) unsubPlayers();
@@ -132,6 +134,7 @@
     localPlayerId = null;
     playersRef = null;
     bulletsRef = null;
+    playerRef = null;
     remotePlayers = {};
     seenBullets.clear();
     if (positionInterval) clearInterval(positionInterval);
@@ -161,7 +164,12 @@
     // If no name provided, do not publish this player (keeps lobbies clean)
     if (!safeName) return;
     // Use set to ensure presence node always exists/overwrites cleanly
-    get("dbSet")(dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`), {
+    const targetRef = playerRef || dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`);
+    const presence = get("dbOnDisconnect");
+    if (presence) {
+      presence(targetRef).remove().catch(() => {});
+    }
+    get("dbSet")(targetRef, {
       name: safeName,
       x: p.x,
       y: p.y,

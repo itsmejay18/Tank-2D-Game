@@ -10,6 +10,7 @@ import {
   onValue,
   onChildAdded,
   onChildRemoved,
+  onDisconnect,
   get,
 } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-database.js";
 
@@ -47,6 +48,7 @@ export const dbOnValue = onValue;
 export const dbOnChildAdded = onChildAdded;
 export const dbOnChildRemoved = onChildRemoved;
 export const dbGet = get;
+export const dbOnDisconnect = onDisconnect;
 
 // Also expose on window for legacy/global access
 window.db = db;
@@ -59,3 +61,4 @@ window.dbOnValue = onValue;
 window.dbOnChildAdded = onChildAdded;
 window.dbOnChildRemoved = onChildRemoved;
 window.dbGet = get;
+window.dbOnDisconnect = onDisconnect;
