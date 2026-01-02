@@ -98,8 +98,9 @@ function updateBullets() {
       }
       // PvP remote tank hit
       if (gameMode === "multiplayer" && bullet.ownerId && window.localPlayerId) {
-        const hitRemote = Object.keys(remotePlayers || {}).find((id) => {
-          const rp = remotePlayers[id];
+        const remotes = window.remotePlayers || {};
+        const hitRemote = Object.keys(remotes).find((id) => {
+          const rp = remotes[id];
           if (!rp || rp.alive === false) return false;
           const dummyRect = { x: rp.targetX, y: rp.targetY, size: player.size };
           return isPointInsideRect(bullet.x, bullet.y, dummyRect);

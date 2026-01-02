@@ -119,12 +119,8 @@ let battleStarted = false; // multiplayer battle begins once another player is s
 // Helper to end MP round and surface modal
 function endMultiplayerRound(message) {
   if (gameMode !== "multiplayer") return;
-  gameRunning = false;
   winnerDeclared = true;
-  if (animationId !== null) {
-    cancelAnimationFrame(animationId);
-    animationId = null;
-  }
+  // Keep the loop running; just surface UI so the player can choose to continue/reset
   if (typeof hideGameOverModal === "function") hideGameOverModal();
   if (gameOverModal) {
     const text = document.getElementById("gameOverText");

@@ -10,6 +10,7 @@
   let playersRef = null;
   let bulletsRef = null;
   let remotePlayers = {};
+  window.remotePlayers = {};
   let seenBullets = new Set();
   let positionInterval = null;
   let pendingStart = false;
@@ -88,6 +89,7 @@
         };
       });
       remotePlayers = next;
+      window.remotePlayers = remotePlayers;
       window.getRemoteCount = () => Object.keys(remotePlayers).length;
       console.info("[MP] Players snapshot keys:", Object.keys(remotePlayers));
       console.info("[MP] Raw players snapshot:", data);
