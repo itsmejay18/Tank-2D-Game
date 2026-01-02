@@ -5,6 +5,7 @@ function createBullet(x, y, angle, speed, owner, options = {}) {
   return {
     x,
     y,
+    ownerId: options.ownerId || null,
     angle,
     speed,
     vx: Math.cos(angle) * speed,
@@ -13,6 +14,7 @@ function createBullet(x, y, angle, speed, owner, options = {}) {
     owner,
     piercing: !!options.piercing,
     color: options.color || null,
+    damage: options.damage || 20,
     bounces: 0,
     maxBounces: options.maxBounces !== undefined ? options.maxBounces : (options.piercing ? 4 : 0),
     life: options.life || 600, // simple lifetime cap to avoid infinite projectiles
@@ -52,6 +54,17 @@ function updateBullets() {
 
     // Wall collisions: remove bullet on hit
     if (bulletHitsWall(bullet)) return false;
+
+    if (gameMode === "multiplayer" && bullet.ownerId && bullet.ownerId !== window.localPlayerId) {
+      // PvP: damage local player only if bullet is not ours
+      const hitLocal = isPointInsideRect(bullet.x, bullet.y, player);
+      if (hitLocal) {
+        applyPlayerDamage(bullet.damage || 20);
+        if (player.health <= 0 && typeof eliminateSelf === "function") eliminateSelf();
+        if (player.health <= 0 && typeof creditKill === "function") creditKill(bullet.ownerId);
+        return false;
+      }
+    }
 
     if (bullet.owner === "enemy") {
       const hit = isPointInsideRect(bullet.x, bullet.y, player);

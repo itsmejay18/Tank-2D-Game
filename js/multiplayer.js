@@ -18,6 +18,8 @@
   let unsubBulletsRemove = null;
   let playersReady = false;
   let playerRef = null;
+  window.localPlayerId = null;
+  window.getRemoteCount = () => 0;
 
   const remotePalette = {
     body: "#4ecdc4",
@@ -45,6 +47,7 @@
     console.info("[MP] Starting multiplayer layer");
     console.info("[MP] Using RTDB URL:", (get("rtdb") || {})._repo?.repoInfo_?.toString?.() || "(unknown)");
     localPlayerId = crypto.randomUUID();
+    window.localPlayerId = localPlayerId;
     playersRef = dbRef(rtdb, `rooms/${ROOM_ID}/players`);
     bulletsRef = dbRef(rtdb, `rooms/${ROOM_ID}/bullets`);
     playerRef = dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`);
@@ -82,6 +85,7 @@
         };
       });
       remotePlayers = next;
+      window.getRemoteCount = () => Object.keys(remotePlayers).length;
       console.info("[MP] Players snapshot keys:", Object.keys(remotePlayers));
       console.info("[MP] Raw players snapshot:", data);
       playersReady = true;
@@ -112,6 +116,8 @@
       const bullet = createBullet(b.x, b.y, angle, speed, "player", {
         color: "#8ff0c9",
         piercing: false,
+        ownerId: b.ownerId || null,
+        damage: b.damage || 20,
       });
       bullet.id = id;
       bullets.push(bullet);
@@ -140,6 +146,7 @@
       dbRemove(dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`)).catch(() => {});
     }
     localPlayerId = null;
+    window.localPlayerId = null;
     playersRef = null;
     bulletsRef = null;
     playerRef = null;
@@ -162,32 +169,62 @@
     });
   }
 
-  function writePlayerState() {
-    const rtdb = get("rtdb");
-    const dbRef = get("dbRef");
-    const dbUpdate = get("dbUpdate");
-    if (!playersRef || !localPlayerId) return;
-    const p = player;
-    const safeName = (window.currentPlayerName || playerName || "").trim();
-    // If no name provided, do not publish this player (keeps lobbies clean)
-    if (!safeName) return;
+function writePlayerState() {
+  const rtdb = get("rtdb");
+  const dbRef = get("dbRef");
+  if (!playersRef || !localPlayerId) return;
+  const p = player;
+  const safeName = (window.currentPlayerName || playerName || "").trim();
+  // If no name provided, do not publish this player (keeps lobbies clean)
+  if (!safeName) return;
     // Use set to ensure presence node always exists/overwrites cleanly
     const targetRef = playerRef || dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`);
     const presence = get("dbOnDisconnect");
     if (presence) {
       presence(targetRef).remove().catch(() => {});
     }
-    get("dbSet")(targetRef, {
-      name: safeName,
-      x: p.x,
-      y: p.y,
-      angle: p.angle || 0,
-      rotation: p.angle || 0,
-      hp: p.health,
-      alive: p.health > 0,
-      ts: Date.now(),
-    }).catch((err) => console.warn("RTDB player update failed:", err?.message || err));
+  get("dbSet")(targetRef, {
+    name: safeName,
+    x: p.x,
+    y: p.y,
+    angle: p.angle || 0,
+    rotation: p.angle || 0,
+    hp: p.health,
+    alive: p.health > 0,
+    kills: p.kills || 0,
+    ts: Date.now(),
+  }).catch((err) => console.warn("RTDB player update failed:", err?.message || err));
+}
+
+// Best-effort kill credit
+function creditKill(ownerId) {
+  const rtdb = get("rtdb");
+  const dbRef = get("dbRef");
+  const dbGet = get("dbGet");
+  const dbSet = get("dbSet");
+  if (!ownerId || !rtdb || !dbRef || !dbGet || !dbSet) return;
+  const ref = dbRef(rtdb, `rooms/${ROOM_ID}/players/${ownerId}`);
+  dbGet(ref)
+    .then((snap) => {
+      if (!snap.exists()) return;
+      const data = snap.val() || {};
+      const kills = Number(data.kills || 0) + 1;
+      dbSet(ref, { ...data, kills, ts: Date.now() }).catch(() => {});
+    })
+    .catch(() => {});
+}
+
+function eliminateSelf() {
+  const rtdb = get("rtdb");
+  const dbRef = get("dbRef");
+  const dbRemove = get("dbRemove");
+  if (localPlayerId && dbRemove && rtdb && dbRef) {
+    dbRemove(dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`)).catch(() => {});
   }
+  window.localPlayerId = null;
+  // Remove owned bullets locally
+  bullets = bullets.filter((b) => b.ownerId !== localPlayerId);
+}
 
   function publishNetworkBullet(bullet) {
     const rtdb = get("rtdb");
@@ -203,6 +240,7 @@
       y: bullet.y,
       vx,
       vy,
+      damage: bullet.damage || 20,
       ts: Date.now(),
     }).catch((err) => console.warn("RTDB bullet publish failed:", err?.message || err));
   }
@@ -213,9 +251,11 @@
   }
 
   // Expose globals so game.js/player.js can call them
-  window.startMultiplayerLayer = startMultiplayerLayer;
-  window.teardownMultiplayer = teardownMultiplayer;
-  window.drawRemotePlayers = drawRemotePlayers;
-  window.publishNetworkBullet = publishNetworkBullet;
-  window.cleanupMultiplayer = cleanupMultiplayer;
+window.startMultiplayerLayer = startMultiplayerLayer;
+window.teardownMultiplayer = teardownMultiplayer;
+window.drawRemotePlayers = drawRemotePlayers;
+window.publishNetworkBullet = publishNetworkBullet;
+window.cleanupMultiplayer = cleanupMultiplayer;
+window.creditKill = creditKill;
+window.eliminateSelf = eliminateSelf;
 })();

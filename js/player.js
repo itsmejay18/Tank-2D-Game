@@ -37,15 +37,18 @@ function attemptPlayerShot() {
   const playerCenter = getCenter(player);
   const angle = player.angle || 0;
   const bulletSpeed = 5;
+  const ownerId = typeof window.localPlayerId !== "undefined" ? window.localPlayerId : null;
   const shot = createBullet(playerCenter.x, playerCenter.y, angle, bulletSpeed, "player", {
     piercing: player.pierceTimer > 0,
     color: player.pierceTimer > 0 ? "#60a5fa" : null,
     maxBounces: player.pierceTimer > 0 ? 4 : 0,
+    ownerId,
+    damage: 20,
   });
   bullets.push(shot);
   // Publish to network in multiplayer mode
   if (typeof publishNetworkBullet === "function" && (window.gameMode === "multiplayer" || typeof gameMode !== "undefined" && gameMode === "multiplayer")) {
-    publishNetworkBullet({ x: playerCenter.x, y: playerCenter.y, angle, speed: bulletSpeed });
+    publishNetworkBullet({ x: playerCenter.x, y: playerCenter.y, angle, speed: bulletSpeed, ownerId, damage: 20 });
   }
   player.fireCooldown = player.rapidTimer > 0 ? 6 : 12;
   playTone(520, 0.05, "square");
@@ -68,6 +71,11 @@ function applyPlayerDamage(amount) {
   playTone(160, 0.08, "sawtooth");
   updateHUD();
   if (player.health > 0) return;
+  if (gameMode === "multiplayer") {
+    // In PvP, elimination is handled by multiplayer helpers
+    if (typeof eliminateSelf === "function") eliminateSelf();
+    return;
+  }
   if (player.lives <= 0) {
     gameOver();
     return;

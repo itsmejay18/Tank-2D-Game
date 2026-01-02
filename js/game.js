@@ -87,6 +87,7 @@ const player = {
   maxHealth: 100,
   health: 100,
   lives: 0,
+  kills: 0,
   invulnTimer: 0,
   dashCooldown: 0,
   dashActive: 0,
@@ -113,6 +114,7 @@ let audioCtx = null;
 let walls = [];
 let gameMode = "solo";
 let cleanupTimer = 0;
+let winnerDeclared = false;
 
 // Wave-based difficulty ramp: start very slow, ease into easy, then medium, then hard
 function setWaveDifficulty(waveNumber) {
@@ -149,6 +151,7 @@ function resetPlayerState() {
   player.fireCooldown = 0;
   player.health = player.maxHealth;
   player.lives = 0;
+  player.kills = 0;
   player.invulnTimer = 60;
   player.dashCooldown = 0;
   player.dashActive = 0;
@@ -173,6 +176,7 @@ function startGame() {
 
   statusMessage.classList.add("hidden");
   statusMessage.textContent = "";
+  winnerDeclared = false;
 
   if (customizePanel) customizePanel.classList.add("hidden");
   landingScreen.classList.add("hidden");
@@ -328,6 +332,18 @@ function update() {
   if (gameMode === "multiplayer" && typeof cleanupMultiplayer === "function") {
     cleanupTimer = (cleanupTimer + 1) % 120;
     if (cleanupTimer === 0) cleanupMultiplayer();
+  }
+  if (gameMode === "multiplayer" && !winnerDeclared && player.health > 0) {
+    const remoteCount = typeof window.getRemoteCount === "function" ? window.getRemoteCount() : 0;
+    const total = 1 + remoteCount;
+    if (total <= 1) {
+      winnerDeclared = true;
+      gameRunning = false;
+      if (statusMessage) {
+        statusMessage.textContent = `Winner: ${playerName}`;
+        statusMessage.classList.remove("hidden");
+      }
+    }
   }
   draw();
   checkTankCollision();
