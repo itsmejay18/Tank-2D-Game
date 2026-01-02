@@ -115,6 +115,7 @@ let walls = [];
 let gameMode = "solo";
 let cleanupTimer = 0;
 let winnerDeclared = false;
+let battleStarted = false; // multiplayer battle begins once another player is seen
 
 // Wave-based difficulty ramp: start very slow, ease into easy, then medium, then hard
 function setWaveDifficulty(waveNumber) {
@@ -177,6 +178,7 @@ function startGame() {
   statusMessage.classList.add("hidden");
   statusMessage.textContent = "";
   winnerDeclared = false;
+  battleStarted = false;
 
   if (customizePanel) customizePanel.classList.add("hidden");
   landingScreen.classList.add("hidden");
@@ -336,7 +338,9 @@ function update() {
   if (gameMode === "multiplayer" && !winnerDeclared && player.health > 0) {
     const remoteCount = typeof window.getRemoteCount === "function" ? window.getRemoteCount() : 0;
     const total = 1 + remoteCount;
-    if (total <= 1) {
+    if (remoteCount > 0) battleStarted = true;
+    // Only declare winner after at least one opponent has been seen
+    if (battleStarted && total <= 1) {
       winnerDeclared = true;
       gameRunning = false;
       if (statusMessage) {
