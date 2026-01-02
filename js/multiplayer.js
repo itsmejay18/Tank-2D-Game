@@ -54,11 +54,19 @@
     const applySnapshot = (snap) => {
       const data = snap.val() || {};
       const next = {};
+      const now = Date.now();
+      const dbRemove = get("dbRemove");
       Object.keys(data).forEach((id) => {
         if (id === localPlayerId) return;
         const d = data[id] || {};
         const safeName = (d.name || "").trim();
         if (!safeName) return; // skip nameless entries
+        const ts = Number(d.ts || d.timestamp || 0);
+        // Cull stale entries (offline/ghost) older than 20s
+        if (ts && now - ts > 20000) {
+          if (dbRemove) dbRemove(dbRef(rtdb, `rooms/${ROOM_ID}/players/${id}`)).catch(() => {});
+          return;
+        }
         const existing = remotePlayers[id] || {};
         const targetX = Number(d.x) || 0;
         const targetY = Number(d.y) || 0;
