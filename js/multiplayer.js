@@ -55,11 +55,13 @@
       Object.keys(data).forEach((id) => {
         if (id === localPlayerId) return;
         const d = data[id] || {};
+        const safeName = (d.name || "").trim();
+        if (!safeName) return; // skip nameless entries
         const existing = remotePlayers[id] || {};
         const targetX = Number(d.x) || 0;
         const targetY = Number(d.y) || 0;
         next[id] = {
-          name: d.name || "Player",
+          name: safeName,
           targetX,
           targetY,
           renderX: existing.renderX ?? targetX,
@@ -155,9 +157,12 @@
     const dbUpdate = get("dbUpdate");
     if (!playersRef || !localPlayerId) return;
     const p = player;
+    const safeName = (window.currentPlayerName || playerName || "").trim();
+    // If no name provided, do not publish this player (keeps lobbies clean)
+    if (!safeName) return;
     // Use set to ensure presence node always exists/overwrites cleanly
     get("dbSet")(dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`), {
-      name: window.currentPlayerName || playerName || "Player",
+      name: safeName,
       x: p.x,
       y: p.y,
       angle: p.angle || 0,
