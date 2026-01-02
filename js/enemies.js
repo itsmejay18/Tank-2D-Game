@@ -9,7 +9,6 @@ function enemyShoot(enemy) {
 }
 
 function updateEnemies() {
-  if (typeof gameMode !== "undefined" && gameMode === "multiplayer") return;
   enemies.forEach((enemy) => {
     moveTankWithObstacles(enemy, enemy.dx, enemy.dy, true);
     const pC = getCenter(player);
@@ -24,10 +23,11 @@ function updateEnemies() {
 }
 
 function spawnEnemiesForWave(waveNumber) {
-  if (typeof gameMode !== "undefined" && gameMode === "multiplayer") return;
-  const light = 2 + waveNumber;
-  const medium = Math.max(1, Math.floor((waveNumber + 1) / 2));
-  const heavy = waveNumber >= 3 ? Math.floor((waveNumber - 1) / 3) : 0;
+  const isMP = typeof gameMode !== "undefined" && gameMode === "multiplayer";
+  // Keep multiplayer bot counts light so human PvP stays primary
+  const light = isMP ? Math.max(1, Math.floor(waveNumber / 2)) : 2 + waveNumber;
+  const medium = isMP ? Math.max(0, Math.floor((waveNumber - 1) / 3)) : Math.max(1, Math.floor((waveNumber + 1) / 2));
+  const heavy = isMP ? (waveNumber >= 4 ? 1 : 0) : waveNumber >= 3 ? Math.floor((waveNumber - 1) / 3) : 0;
   addEnemies("light", light);
   addEnemies("medium", medium);
   addEnemies("heavy", heavy);
@@ -77,7 +77,6 @@ function setRandomVelocity(obj) {
 }
 
 function handleWaveProgression() {
-  if (typeof gameMode !== "undefined" && gameMode === "multiplayer") return;
   if (enemies.length === 0) {
     if (wavePauseTimer === 0) {
       wavePauseTimer = 150;
