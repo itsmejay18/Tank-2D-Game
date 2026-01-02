@@ -355,14 +355,17 @@ function update() {
     cleanupTimer = (cleanupTimer + 1) % 120;
     if (cleanupTimer === 0) cleanupMultiplayer();
   }
-  if (gameMode === "multiplayer" && !winnerDeclared && player.health > 0) {
+  if (gameMode === "multiplayer" && player.health > 0) {
     const remoteCount = typeof window.getRemoteCount === "function" ? window.getRemoteCount() : 0;
     const total = 1 + remoteCount;
     if (remoteCount > 0) battleStarted = true;
-    // Only declare winner after at least one opponent has been seen
-    if (battleStarted && total <= 1) {
-      endMultiplayerRound(`Winner: ${playerName}`);
-      return;
+    // Only announce winner after at least one opponent has been seen; keep map running for new arrivals
+    if (!winnerDeclared && battleStarted && total <= 1) {
+      winnerDeclared = true;
+      if (statusMessage) {
+        statusMessage.textContent = `Winner: ${playerName} (waiting for challengers...)`;
+        statusMessage.classList.remove("hidden");
+      }
     }
   }
   draw();

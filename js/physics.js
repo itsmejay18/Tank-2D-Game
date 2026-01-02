@@ -59,6 +59,7 @@ function updateBullets() {
       // PvP: damage local player only if bullet is not ours
       const hitLocal = isPointInsideRect(bullet.x, bullet.y, player);
       if (hitLocal) {
+        emitParticles(bullet.x, bullet.y, 10, "#8ff0c9");
         applyPlayerDamage(bullet.damage || 20);
         if (player.health <= 0 && typeof eliminateSelf === "function") eliminateSelf();
         if (player.health <= 0 && typeof creditKill === "function") creditKill(bullet.ownerId);
@@ -77,15 +78,16 @@ function updateBullets() {
     if (bullet.owner === "enemy") {
       const hit = isPointInsideRect(bullet.x, bullet.y, player);
       if (hit) {
+        emitParticles(bullet.x, bullet.y, 8, "#fbbf24");
         applyPlayerDamage(DAMAGE.enemyBullet);
         return shouldRemoveNetwork("playerHit");
       }
     } else if (bullet.owner === "player") {
-      // Hit enemy
+      // Hit enemy (solo)
       const victim = enemies.find((e) => isPointInsideRect(bullet.x, bullet.y, e));
       if (victim) {
         victim.hp -= PLAYER_BULLET_DAMAGE;
-        emitParticles(bullet.x, bullet.y, 6, "#8ff0c9");
+        emitParticles(bullet.x, bullet.y, 10, "#8ff0c9");
         if (victim.hp <= 0) {
           score += victim.scoreValue;
           emitParticles(victim.x + victim.size / 2, victim.y + victim.size / 2, 18, "#f97316");
@@ -93,6 +95,20 @@ function updateBullets() {
         }
         if (bullet.piercing) return true; // continue
         return shouldRemoveNetwork("enemyHit");
+      }
+      // PvP remote tank hit
+      if (gameMode === "multiplayer" && bullet.ownerId && window.localPlayerId) {
+        const hitRemote = Object.keys(remotePlayers || {}).find((id) => {
+          const rp = remotePlayers[id];
+          if (!rp || rp.alive === false) return false;
+          const dummyRect = { x: rp.targetX, y: rp.targetY, size: player.size };
+          return isPointInsideRect(bullet.x, bullet.y, dummyRect);
+        });
+        if (hitRemote) {
+          emitParticles(bullet.x, bullet.y, 10, "#8ff0c9");
+          if (bullet.piercing) return true;
+          return shouldRemoveNetwork("remoteHit");
+        }
       }
     }
     return true;
