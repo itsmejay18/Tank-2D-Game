@@ -366,6 +366,7 @@ function update() {
         statusMessage.textContent = `Winner: ${playerName} (waiting for challengers...)`;
         statusMessage.classList.remove("hidden");
       }
+      // Do NOT stop the game loop; keep moving while waiting for newcomers
     }
   }
   draw();
