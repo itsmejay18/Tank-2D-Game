@@ -73,11 +73,7 @@ function applyPlayerDamage(amount) {
   if (player.health > 0) return;
   if (gameMode === "multiplayer") {
     if (typeof eliminateSelf === "function") eliminateSelf();
-    gameRunning = false;
-    if (statusMessage) {
-      statusMessage.textContent = "Eliminated";
-      statusMessage.classList.remove("hidden");
-    }
+    if (typeof endMultiplayerRound === "function") endMultiplayerRound("Eliminated");
     return;
   }
   if (player.lives <= 0) {

@@ -116,6 +116,26 @@ let gameMode = "solo";
 let cleanupTimer = 0;
 let winnerDeclared = false;
 let battleStarted = false; // multiplayer battle begins once another player is seen
+// Helper to end MP round and surface modal
+function endMultiplayerRound(message) {
+  if (gameMode !== "multiplayer") return;
+  gameRunning = false;
+  winnerDeclared = true;
+  if (animationId !== null) {
+    cancelAnimationFrame(animationId);
+    animationId = null;
+  }
+  if (typeof hideGameOverModal === "function") hideGameOverModal();
+  if (gameOverModal) {
+    const text = document.getElementById("gameOverText");
+    if (text) text.textContent = message || "Match finished!";
+    gameOverModal.classList.remove("hidden");
+  } else if (statusMessage) {
+    statusMessage.textContent = message || "Match finished!";
+    statusMessage.classList.remove("hidden");
+  }
+}
+window.endMultiplayerRound = endMultiplayerRound;
 
 // Wave-based difficulty ramp: start very slow, ease into easy, then medium, then hard
 function setWaveDifficulty(waveNumber) {
@@ -341,12 +361,8 @@ function update() {
     if (remoteCount > 0) battleStarted = true;
     // Only declare winner after at least one opponent has been seen
     if (battleStarted && total <= 1) {
-      winnerDeclared = true;
-      gameRunning = false;
-      if (statusMessage) {
-        statusMessage.textContent = `Winner: ${playerName}`;
-        statusMessage.classList.remove("hidden");
-      }
+      endMultiplayerRound(`Winner: ${playerName}`);
+      return;
     }
   }
   draw();
