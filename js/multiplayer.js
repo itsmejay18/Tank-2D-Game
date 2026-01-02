@@ -83,6 +83,7 @@
           angle: Number(d.rotation ?? d.angle ?? 0),
           hp: d.hp,
           alive: d.alive !== false,
+          appearance: d.appearance || null,
         };
       });
       remotePlayers = next;
@@ -197,6 +198,7 @@ function writePlayerState() {
     hp: p.health,
     alive: p.health > 0,
     kills: p.kills || 0,
+    appearance: typeof playerAppearance !== "undefined" ? playerAppearance : null,
     ts: Date.now(),
   }).catch((err) => console.warn("RTDB player update failed:", err?.message || err));
 }
@@ -257,21 +259,47 @@ function eliminateSelf() {
     return;
   }
 
-  function removeNetworkBullet(bulletId) {
-    const rtdb = get("rtdb");
-    const dbRef = get("dbRef");
-    const dbRemove = get("dbRemove");
-    if (!bulletId || !rtdb || !dbRef || !dbRemove) return;
-    dbRemove(dbRef(rtdb, `rooms/${ROOM_ID}/bullets/${bulletId}`)).catch(() => {});
-  }
+function removeNetworkBullet(bulletId) {
+  const rtdb = get("rtdb");
+  const dbRef = get("dbRef");
+  const dbRemove = get("dbRemove");
+  if (!bulletId || !rtdb || !dbRef || !dbRemove) return;
+  dbRemove(dbRef(rtdb, `rooms/${ROOM_ID}/bullets/${bulletId}`)).catch(() => {});
+}
 
-  // Expose globals so game.js/player.js can call them
-  window.startMultiplayerLayer = startMultiplayerLayer;
-  window.teardownMultiplayer = teardownMultiplayer;
-  window.drawRemotePlayers = drawRemotePlayers;
-  window.publishNetworkBullet = publishNetworkBullet;
-  window.cleanupMultiplayer = cleanupMultiplayer;
-  window.creditKill = creditKill;
-  window.eliminateSelf = eliminateSelf;
-  window.removeNetworkBullet = removeNetworkBullet;
+// Apply damage to a remote player (best effort)
+function damageRemotePlayer(targetId, damage, attackerId) {
+  const rtdb = get("rtdb");
+  const dbRef = get("dbRef");
+  const dbGet = get("dbGet");
+  const dbSet = get("dbSet");
+  const dbRemove = get("dbRemove");
+  if (!targetId || !rtdb || !dbRef || !dbGet || !dbSet) return;
+  const ref = dbRef(rtdb, `rooms/${ROOM_ID}/players/${targetId}`);
+  dbGet(ref)
+    .then((snap) => {
+      if (!snap.exists()) return;
+      const data = snap.val() || {};
+      const hp = Number(data.hp || 0);
+      const nextHp = Math.max(0, hp - (damage || 20));
+      if (nextHp <= 0 && dbRemove) {
+        dbRemove(ref).catch(() => {});
+        if (attackerId && typeof creditKill === "function") creditKill(attackerId);
+        return;
+      }
+      dbSet(ref, { ...data, hp: nextHp, ts: Date.now() }).catch(() => {});
+    })
+    .catch(() => {});
+}
+
+// Expose globals so game.js/player.js can call them
+window.startMultiplayerLayer = startMultiplayerLayer;
+window.teardownMultiplayer = teardownMultiplayer;
+window.drawRemotePlayers = drawRemotePlayers;
+window.publishNetworkBullet = publishNetworkBullet;
+window.cleanupMultiplayer = cleanupMultiplayer;
+window.creditKill = creditKill;
+window.eliminateSelf = eliminateSelf;
+window.removeNetworkBullet = removeNetworkBullet;
+window.damageRemotePlayer = damageRemotePlayer;
 })();

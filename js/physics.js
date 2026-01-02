@@ -107,6 +107,9 @@ function updateBullets() {
         });
         if (hitRemote) {
           emitParticles(bullet.x, bullet.y, 10, "#8ff0c9");
+          if (typeof damageRemotePlayer === "function") {
+            damageRemotePlayer(hitRemote, bullet.damage || 20, bullet.ownerId);
+          }
           if (bullet.piercing) return true;
           return shouldRemoveNetwork("remoteHit");
         }
