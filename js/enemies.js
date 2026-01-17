@@ -24,6 +24,8 @@ function updateEnemies() {
 
 function spawnEnemiesForWave(waveNumber) {
   const isMP = typeof gameMode !== "undefined" && gameMode === "multiplayer";
+  const isHost = typeof window !== "undefined" && typeof window.isMultiplayerHost === "function" ? window.isMultiplayerHost() : false;
+  if (isMP && !isHost) return; // only host spawns in multiplayer
   // Keep multiplayer bot counts light so human PvP stays primary
   const light = isMP ? Math.max(1, Math.floor(waveNumber / 2)) : 2 + waveNumber;
   const medium = isMP ? Math.max(0, Math.floor((waveNumber - 1) / 3)) : Math.max(1, Math.floor((waveNumber + 1) / 2));
@@ -38,7 +40,14 @@ function addEnemies(type, count) {
   while (count > 0 && attempts < 200) {
     const enemy = createEnemy(type);
     if (placeEnemySafely(enemy)) {
-      enemies.push(enemy);
+      // If multiplayer host, publish to RTDB instead of direct push (listeners will sync)
+      const isMP = typeof gameMode !== "undefined" && gameMode === "multiplayer";
+      const isHost = typeof window !== "undefined" && typeof window.isMultiplayerHost === "function" ? window.isMultiplayerHost() : false;
+      if (isMP && isHost && typeof publishNetworkEnemy === "function") {
+        publishNetworkEnemy(enemy);
+      } else {
+        enemies.push(enemy);
+      }
       count -= 1;
     }
     attempts += 1;
@@ -77,6 +86,9 @@ function setRandomVelocity(obj) {
 }
 
 function handleWaveProgression() {
+  const isMP = typeof gameMode !== "undefined" && gameMode === "multiplayer";
+  const isHost = typeof window !== "undefined" && typeof window.isMultiplayerHost === "function" ? window.isMultiplayerHost() : false;
+  if (isMP && !isHost) return;
   if (enemies.length === 0) {
     if (wavePauseTimer === 0) {
       wavePauseTimer = 150;

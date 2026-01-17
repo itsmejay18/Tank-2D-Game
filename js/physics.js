@@ -130,6 +130,10 @@ function updatePickups() {
   pickups = pickups.filter((pickup) => {
     if (isPointInsideRect(pickup.x, pickup.y, player)) {
       applyPickup(pickup);
+      // Remove from network if multiplayer
+      if (gameMode === "multiplayer" && pickup.id && typeof removeNetworkPickup === "function") {
+        removeNetworkPickup(pickup.id);
+      }
       return false;
     }
     return true;
@@ -141,6 +145,9 @@ function spawnPickup() {
   const safeDistance = 80;
   const types = ["health", "rapid", "pierce"];
   const type = types[Math.floor(Math.random() * types.length)];
+  const isMP = typeof gameMode !== "undefined" && gameMode === "multiplayer";
+  const isHost = typeof window !== "undefined" && typeof window.isMultiplayerHost === "function" ? window.isMultiplayerHost() : false;
+  if (isMP && !isHost) return; // only host spawns pickups
   let attempts = 0;
   while (attempts < 40) {
     const x = Math.random() * (canvas.width - size);
@@ -148,7 +155,12 @@ function spawnPickup() {
     const rect = { x, y, width: size, height: size };
     const obstacleHit = walls.some((obs) => rectanglesOverlap(rect, obs));
     if (!obstacleHit && isFarFromPlayerAndEnemies(x, y, safeDistance)) {
-      pickups.push({ x, y, size, type });
+      const pickup = { id: crypto.randomUUID(), x, y, size, type };
+      if (isMP && isHost && typeof publishNetworkPickup === "function") {
+        publishNetworkPickup(pickup);
+      } else {
+        pickups.push(pickup);
+      }
       break;
     }
     attempts += 1;

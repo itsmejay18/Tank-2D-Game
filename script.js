@@ -2,6 +2,100 @@
 // Features: health/lives, waves with enemy types, dash, pickups (health/rapid/pierce),
 // destructible obstacles per map, piercing shots bounce, simple audio + particles.
 
+// Initialize Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDGld6iY6dKbHBvoYH82-KJTswKCnQjmBk",
+  authDomain: "steeldashbulletstorm.firebaseapp.com",
+  databaseURL: "https://steeldashbulletstorm-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "steeldashbulletstorm",
+  storageBucket: "steeldashbulletstorm.appspot.com",
+  messagingSenderId: "358145837498",
+  appId: "1:358145837498:web:37f263dfabfa773345f583",
+  measurementId: "G-JDMK2JGLQB",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const playerRef = ref(db, "controller/player1");
+
+onValue(playerRef, (snapshot) => {
+  const data = snapshot.val();
+  if (data) {
+    updateTankControls(data); // function in your tank game
+  }
+});
+
+const iotKeys = { w: false, a: false, s: false, d: false };
+
+function applyIotKeys(next) {
+  iotKeys.w = !!next.w;
+  iotKeys.a = !!next.a;
+  iotKeys.s = !!next.s;
+  iotKeys.d = !!next.d;
+  ["w", "a", "s", "d"].forEach((key) => {
+    if (iotKeys[key]) {
+      keys[key] = true;
+    } else if (!keyboardKeys[key] && !touchKeyCounts[key]) {
+      keys[key] = false;
+    }
+  });
+}
+
+function setIotDirection(joy) {
+  const next = { w: false, a: false, s: false, d: false };
+  switch (joy) {
+    case "LEFT":
+      next.a = true;
+      break;
+    case "RIGHT":
+      next.d = true;
+      break;
+    case "UP":
+      next.w = true;
+      break;
+    case "DOWN":
+      next.s = true;
+      break;
+    case "UP_LEFT":
+      next.w = true;
+      next.a = true;
+      break;
+    case "UP_RIGHT":
+      next.w = true;
+      next.d = true;
+      break;
+    case "DOWN_LEFT":
+      next.s = true;
+      next.a = true;
+      break;
+    case "DOWN_RIGHT":
+      next.s = true;
+      next.d = true;
+      break;
+    default:
+      break;
+  }
+  applyIotKeys(next);
+}
+
+function updateTankControls(data) {
+  const joy = String(data.joy || "").toUpperCase();
+  const btn1 = !!data.button1;
+  const btn2 = !!data.button2;
+  const btn3 = !!data.button3;
+  const btn4 = !!data.button4;
+  const joyPress = !!data.joyPress;
+
+  setIotDirection(joy);
+  if (btn1) attemptPlayerShot();
+  if (btn2 || btn3 || joyPress) startDash();
+  if (btn4) returnToMenu();
+}
+
 // DOM references
 const landingScreen = document.getElementById("landing");
 const customizePanel = document.getElementById("customizePanel");

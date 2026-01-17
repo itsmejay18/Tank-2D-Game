@@ -9,6 +9,8 @@
   let localPlayerId = null;
   let playersRef = null;
   let bulletsRef = null;
+  let pickupsRef = null;
+  let enemiesRef = null;
   let remotePlayers = {};
   window.remotePlayers = {};
   let seenBullets = new Set();
@@ -17,6 +19,8 @@
   let unsubPlayers = null;
   let unsubBulletsAdd = null;
   let unsubBulletsRemove = null;
+  let unsubPickups = null;
+  let unsubEnemies = null;
   let playersReady = false;
   let playerRef = null;
   window.localPlayerId = null;
@@ -51,6 +55,8 @@
     window.localPlayerId = localPlayerId;
     playersRef = dbRef(rtdb, `rooms/${ROOM_ID}/players`);
     bulletsRef = dbRef(rtdb, `rooms/${ROOM_ID}/bullets`);
+    pickupsRef = dbRef(rtdb, `rooms/${ROOM_ID}/pickups`);
+    enemiesRef = dbRef(rtdb, `rooms/${ROOM_ID}/enemies`);
     playerRef = dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`);
     writePlayerState();
 
@@ -136,6 +142,42 @@
       seenBullets.delete(id);
     });
 
+    // Shared pickups
+    const onPickups = (snap) => {
+      const data = snap.val() || {};
+      pickups = Object.keys(data).map((id) => {
+        const p = data[id] || {};
+        return { id, x: p.x || 0, y: p.y || 0, size: p.size || 16, type: p.type || "health" };
+      });
+    };
+    unsubPickups = get("dbOnValue")(pickupsRef, onPickups, () => {});
+
+    // Shared enemies (spawn sync only; AI local)
+    const onEnemies = (snap) => {
+      const data = snap.val() || {};
+      enemies = Object.keys(data).map((id) => {
+        const e = data[id] || {};
+        return {
+          id,
+          type: e.type || "light",
+          x: e.x || 0,
+          y: e.y || 0,
+          size: e.size || 30,
+          dx: e.dx || 0,
+          dy: e.dy || 0,
+          angle: e.angle || 0,
+          speed: e.speed || 2,
+          bulletSpeed: e.bulletSpeed || 3,
+          fireDelay: e.fireDelay || 60,
+          hp: e.hp || 50,
+          maxHp: e.maxHp || 50,
+          scoreValue: e.scoreValue || 10,
+          fireCooldown: Math.random() * (e.fireDelay || 60),
+        };
+      });
+    };
+    unsubEnemies = get("dbOnValue")(enemiesRef, onEnemies, () => {});
+
     positionInterval = setInterval(writePlayerState, 100);
     window.addEventListener("beforeunload", teardownMultiplayer);
   }
@@ -147,7 +189,9 @@
     if (unsubPlayers) unsubPlayers();
     if (unsubBulletsAdd) unsubBulletsAdd();
     if (unsubBulletsRemove) unsubBulletsRemove();
-    unsubPlayers = unsubBulletsAdd = unsubBulletsRemove = null;
+    if (unsubPickups) unsubPickups();
+    if (unsubEnemies) unsubEnemies();
+    unsubPlayers = unsubBulletsAdd = unsubBulletsRemove = unsubPickups = unsubEnemies = null;
     if (localPlayerId && playersRef) {
       dbRemove(dbRef(rtdb, `rooms/${ROOM_ID}/players/${localPlayerId}`)).catch(() => {});
     }
@@ -170,7 +214,8 @@
       rp.renderX = lerp(rp.renderX ?? rp.targetX, rp.targetX, 0.18);
       rp.renderY = lerp(rp.renderY ?? rp.targetY, rp.targetY, 0.18);
       const dummy = { x: rp.renderX, y: rp.renderY, size: player.size, angle: rp.angle || 0 };
-      drawTank(dummy, remotePalette, dummy.angle);
+      const palette = rp.appearance || remotePalette;
+      drawTank(dummy, palette, dummy.angle);
       if (typeof drawNameTag === "function") drawNameTag(dummy, rp.name || "Player", "#8ff1e9");
     });
   }
@@ -273,33 +318,100 @@ function damageRemotePlayer(targetId, damage, attackerId) {
   const dbRef = get("dbRef");
   const dbGet = get("dbGet");
   const dbSet = get("dbSet");
-  const dbRemove = get("dbRemove");
-  if (!targetId || !rtdb || !dbRef || !dbGet || !dbSet) return;
-  const ref = dbRef(rtdb, `rooms/${ROOM_ID}/players/${targetId}`);
-  dbGet(ref)
-    .then((snap) => {
-      if (!snap.exists()) return;
-      const data = snap.val() || {};
-      const hp = Number(data.hp || 0);
-      const nextHp = Math.max(0, hp - (damage || 20));
-      if (nextHp <= 0 && dbRemove) {
-        dbRemove(ref).catch(() => {});
-        if (attackerId && typeof creditKill === "function") creditKill(attackerId);
-        return;
-      }
-      dbSet(ref, { ...data, hp: nextHp, ts: Date.now() }).catch(() => {});
+    const dbRemove = get("dbRemove");
+    if (!targetId || !rtdb || !dbRef || !dbGet || !dbSet) return;
+    const ref = dbRef(rtdb, `rooms/${ROOM_ID}/players/${targetId}`);
+    dbGet(ref)
+      .then((snap) => {
+        if (!snap.exists()) return;
+        const data = snap.val() || {};
+        const hp = Number(data.hp || 0);
+        const nextHp = Math.max(0, hp - (damage || 20));
+        if (nextHp <= 0 && dbRemove) {
+          dbRemove(ref).catch(() => {});
+          if (attackerId && typeof creditKill === "function") creditKill(attackerId);
+          return;
+        }
+        dbSet(ref, { ...data, hp: nextHp, ts: Date.now() }).catch(() => {});
     })
     .catch(() => {});
 }
 
-// Expose globals so game.js/player.js can call them
-window.startMultiplayerLayer = startMultiplayerLayer;
-window.teardownMultiplayer = teardownMultiplayer;
-window.drawRemotePlayers = drawRemotePlayers;
+function publishNetworkPickup(p) {
+  const rtdb = get("rtdb");
+  const dbRef = get("dbRef");
+  const dbSet = get("dbSet");
+  if (!pickupsRef || !p || !p.id || !rtdb || !dbRef || !dbSet) return;
+  dbSet(dbRef(rtdb, `rooms/${ROOM_ID}/pickups/${p.id}`), {
+    x: p.x,
+    y: p.y,
+    size: p.size,
+    type: p.type,
+    ts: Date.now(),
+  }).catch(() => {});
+}
+
+function removeNetworkPickup(id) {
+  const rtdb = get("rtdb");
+  const dbRef = get("dbRef");
+  const dbRemove = get("dbRemove");
+  if (!id || !rtdb || !dbRef || !dbRemove) return;
+  dbRemove(dbRef(rtdb, `rooms/${ROOM_ID}/pickups/${id}`)).catch(() => {});
+}
+
+function publishNetworkEnemy(e) {
+  const rtdb = get("rtdb");
+  const dbRef = get("dbRef");
+  const dbSet = get("dbSet");
+  if (!enemiesRef || !e || !rtdb || !dbRef || !dbSet) return;
+  const id = e.id || crypto.randomUUID();
+  dbSet(dbRef(rtdb, `rooms/${ROOM_ID}/enemies/${id}`), {
+    type: e.type,
+    x: e.x,
+    y: e.y,
+    size: e.size,
+    dx: e.dx,
+    dy: e.dy,
+    angle: e.angle,
+    speed: e.speed,
+    bulletSpeed: e.bulletSpeed,
+    fireDelay: e.fireDelay,
+    hp: e.hp,
+    maxHp: e.maxHp,
+    scoreValue: e.scoreValue,
+    ts: Date.now(),
+  }).catch(() => {});
+}
+
+function removeNetworkEnemy(id) {
+  const rtdb = get("rtdb");
+  const dbRef = get("dbRef");
+  const dbRemove = get("dbRemove");
+  if (!id || !rtdb || !dbRef || !dbRemove) return;
+  dbRemove(dbRef(rtdb, `rooms/${ROOM_ID}/enemies/${id}`)).catch(() => {});
+}
+
+function isMultiplayerHost() {
+  const ids = Object.keys(remotePlayers);
+  if (localPlayerId) ids.push(localPlayerId);
+  if (ids.length === 0) return false;
+  ids.sort();
+    return localPlayerId === ids[0];
+  }
+
+  // Expose globals so game.js/player.js can call them
+  window.startMultiplayerLayer = startMultiplayerLayer;
+  window.teardownMultiplayer = teardownMultiplayer;
+  window.drawRemotePlayers = drawRemotePlayers;
 window.publishNetworkBullet = publishNetworkBullet;
 window.cleanupMultiplayer = cleanupMultiplayer;
 window.creditKill = creditKill;
 window.eliminateSelf = eliminateSelf;
 window.removeNetworkBullet = removeNetworkBullet;
 window.damageRemotePlayer = damageRemotePlayer;
+window.isMultiplayerHost = isMultiplayerHost;
+window.publishNetworkPickup = publishNetworkPickup;
+window.removeNetworkPickup = removeNetworkPickup;
+window.publishNetworkEnemy = publishNetworkEnemy;
+window.removeNetworkEnemy = removeNetworkEnemy;
 })();
